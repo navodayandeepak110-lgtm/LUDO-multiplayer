@@ -2,162 +2,364 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D❤️V. LUDO - Play with Friends</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>D❤️V. LUDO - Multiplayer</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="logo">
-        <span class="dice-icon">🎲</span>
-        <h1>D❤️V. <span>LUDO</span></h1>
+  <div class="game-app">
+
+    <!-- In-Game Floating Feedback / Toast Alerts -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Celebration Fireworks / Hearts Layer -->
+    <div id="fx-layer" class="fx-layer"></div>
+
+    <!-- Top Mini Info Bar (Header) -->
+    <header class="game-header">
+      <div class="header-logo">
+        <span class="dice-ico">🎲</span>
+        <span class="game-title">D❤️V. <span class="highlight">LUDO</span></span>
       </div>
-      <div id="room-info" class="room-badge hidden">
-        <span>Room Code: <strong id="display-room-code">------</strong></span>
-        <button id="copy-code-btn" title="Copy code to share">📋 Copy</button>
+      <div id="room-info-pill" class="room-pill hidden">
+        <span class="room-label">ROOM:</span>
+        <strong id="display-room-code" class="room-code-txt">------</strong>
+        <button id="copy-code-btn" class="icon-btn" title="Copy Room Code">📋</button>
       </div>
     </header>
 
-    <!-- Modal / Lobby Screen -->
-    <div id="lobby-screen" class="view-screen active">
-      <div class="card lobby-card">
-        <h2>Play with Friends</h2>
-        <p class="subtitle">Create a private room or enter a code to join your friend from anywhere!</p>
+    <!-- 1. LOBBY VIEW -->
+    <main id="lobby-screen" class="view-screen active">
+      <div class="lobby-card">
+        <div class="lobby-badge">ONLINE MULTIPLAYER</div>
+        <h1 class="lobby-title">Play With Friends</h1>
+        <p class="lobby-desc">Create a private game or join with a room code to play together in real-time!</p>
 
-        <div class="input-group">
-          <label for="player-name">Your Name</label>
-          <input type="text" id="player-name" placeholder="Enter your nickname" maxlength="15" autofocus>
+        <div class="input-block">
+          <label for="player-name">Your Nickname</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input type="text" id="player-name" placeholder="Enter your name" maxlength="15" autofocus>
+          </div>
         </div>
 
-        <div class="tabs">
+        <div class="tab-switch">
           <button class="tab-btn active" id="tab-create-btn">Create Game</button>
           <button class="tab-btn" id="tab-join-btn">Join Game</button>
         </div>
 
-        <!-- Create Tab Content -->
-        <div id="create-section" class="tab-content active">
-          <div class="input-group">
-            <label>Number of Players</label>
-            <div class="player-count-selector">
-              <label class="radio-label">
+        <!-- Create Section -->
+        <div id="create-section" class="tab-pane active">
+          <div class="input-block">
+            <label>Select Players</label>
+            <div class="player-options">
+              <label class="radio-option">
                 <input type="radio" name="max-players" value="2" checked>
-                <span>2 Players (1v1)</span>
+                <div class="option-content">
+                  <span class="option-title">2 Players (1v1)</span>
+                  <span class="option-sub">Deepak vs Vandana</span>
+                </div>
               </label>
-              <label class="radio-label">
+              <label class="radio-option">
                 <input type="radio" name="max-players" value="3">
-                <span>3 Players</span>
+                <div class="option-content">
+                  <span class="option-title">3 Players</span>
+                  <span class="option-sub">3-Way Match</span>
+                </div>
               </label>
-              <label class="radio-label">
+              <label class="radio-option">
                 <input type="radio" name="max-players" value="4">
-                <span>4 Players</span>
+                <div class="option-content">
+                  <span class="option-title">4 Players</span>
+                  <span class="option-sub">Classic 4-Way</span>
+                </div>
               </label>
             </div>
           </div>
-          <button id="create-room-btn" class="btn btn-primary">Create Room & Play</button>
-        </div>
-
-        <!-- Join Tab Content -->
-        <div id="join-section" class="tab-content">
-          <div class="input-group">
-            <label for="room-code-input">Game Code</label>
-            <input type="text" id="room-code-input" placeholder="e.g. 7K2X9" maxlength="6" style="text-transform: uppercase;">
-          </div>
-          <button id="join-room-btn" class="btn btn-success">Join Room</button>
-        </div>
-
-        <div id="lobby-error" class="error-text"></div>
-      </div>
-    </div>
-
-    <!-- Waiting Room View (Before Start) -->
-    <div id="waiting-screen" class="view-screen">
-      <div class="card waiting-card">
-        <h2>Waiting for Players...</h2>
-        <div class="share-box">
-          <p>Share this code with your friend:</p>
-          <div class="code-pill">
-            <span id="waiting-code">------</span>
-            <button id="waiting-copy-btn" class="btn btn-sm">Copy Code</button>
-          </div>
-        </div>
-
-        <div class="players-list-box">
-          <h3>Connected Players:</h3>
-          <div id="players-list" class="players-list"></div>
-        </div>
-
-        <div id="host-controls" class="host-controls hidden">
-          <button id="start-game-btn" class="btn btn-primary">Start Game Now</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Game View -->
-    <div id="game-screen" class="view-screen">
-      <div class="game-layout">
-
-        <!-- Compact Player Bar -->
-        <div class="players-bar">
-          <div id="game-players-list" class="game-players-compact">
-            <!-- Rendered dynamically -->
-          </div>
-        </div>
-
-        <!-- Center: 15x15 Ludo Board -->
-        <div class="board-container">
-          <div id="ludo-board" class="ludo-board">
-            <!-- 15x15 grid cells injected dynamically via JS -->
-          </div>
-        </div>
-
-        <!-- Dice Control Box - Compact -->
-        <div class="dice-control">
-          <div class="turn-indicator" id="turn-banner">
-            <span id="turn-text">Your Turn</span>
-          </div>
-          <div class="dice-area">
-            <div id="dice" class="dice dice-1">
-              <div class="dot center"></div>
-            </div>
-            <button id="roll-dice-btn" class="btn btn-roll" disabled>
-              <span class="btn-roll-text">ROLL DICE</span>
-            </button>
-          </div>
-          <p id="dice-hint" class="dice-hint">Waiting for your turn...</p>
-          <div id="dice-result" class="dice-result hidden"></div>
-        </div>
-
-        <!-- Collapsible Activity & Chat -->
-        <div class="chat-panel">
-          <button class="chat-toggle" id="chat-toggle">
-            <span>💬 Game Activity & Chat</span>
-            <span class="toggle-icon">▼</span>
+          <button id="create-room-btn" class="game-btn btn-gold">
+            <span>CREATE ROOM & PLAY</span>
           </button>
-          <div class="chat-content" id="chat-content">
-            <div id="activity-log" class="activity-log"></div>
-            <form id="chat-form" class="chat-form">
-              <input type="text" id="chat-input" placeholder="Type message..." maxlength="100">
-              <button type="submit" class="btn btn-sm">Send</button>
-            </form>
+        </div>
+
+        <!-- Join Section -->
+        <div id="join-section" class="tab-pane">
+          <div class="input-block">
+            <label for="room-code-input">Game Room Code</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔑</span>
+              <input type="text" id="room-code-input" placeholder="e.g. 7K2X9" maxlength="6" style="text-transform: uppercase;">
+            </div>
+          </div>
+          <button id="join-room-btn" class="game-btn btn-green">
+            <span>JOIN ROOM</span>
+          </button>
+        </div>
+
+        <div id="lobby-error" class="error-msg"></div>
+      </div>
+    </main>
+
+    <!-- 2. WAITING ROOM VIEW -->
+    <main id="waiting-screen" class="view-screen">
+      <div class="lobby-card waiting-box">
+        <div class="waiting-header">
+          <div class="pulse-loader"></div>
+          <h2>Waiting For Players...</h2>
+          <p>Share this game code with your friend to connect</p>
+        </div>
+
+        <div class="share-pill">
+          <span class="share-code-title">ROOM CODE</span>
+          <span id="waiting-code" class="share-code">------</span>
+          <button id="waiting-copy-btn" class="game-btn btn-sm btn-gold">
+            <span>📋 COPY CODE</span>
+          </button>
+        </div>
+
+        <div class="players-status-section">
+          <h3>Connected Players</h3>
+          <div id="players-list" class="players-status-list"></div>
+        </div>
+
+        <div id="host-controls" class="host-panel hidden">
+          <button id="start-game-btn" class="game-btn btn-gold">
+            <span>START GAME NOW</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 3. MOBILE GAME CANVAS VIEW -->
+    <main id="game-screen" class="view-screen">
+      <div class="game-canvas">
+
+        <!-- Top Player Zone (Opponents, e.g. Vandana) -->
+        <div class="top-player-zone" id="top-player-zone">
+          <!-- Dynamically populated opponent avatar profile -->
+        </div>
+
+        <!-- Middle Zone: Centered Ludo Board with optional Side Avatars (for 3P/4P) -->
+        <div class="board-area">
+          <div class="side-player-zone left" id="left-player-zone"></div>
+
+          <div class="board-wrapper">
+            <div id="ludo-board" class="ludo-board">
+              <!-- 15x15 Ludo Grid Cells Generated by JS -->
+            </div>
+          </div>
+
+          <div class="side-player-zone right" id="right-player-zone"></div>
+        </div>
+
+        <!-- Bottom Player Zone (Current User "YOU" + Integrated 3D Dice) -->
+        <div class="bottom-player-zone" id="bottom-player-zone">
+          <!-- Populated with Local Player Profile + 3D Interactive Dice -->
+        </div>
+
+        <!-- Bottom Game Toolbar (Floating Dock) -->
+        <nav class="game-toolbar" aria-label="Game controls">
+          <button id="toolbar-emoji-btn" class="toolbar-btn" title="Quick Emojis & Fast Chat">
+            <span class="btn-emoji-icon">😀</span>
+            <span class="toolbar-label">EMOJI</span>
+          </button>
+
+          <button id="toolbar-chat-btn" class="toolbar-btn" title="Game Chat">
+            <span class="btn-chat-icon">💬</span>
+            <span id="chat-badge" class="unread-badge hidden">0</span>
+            <span class="toolbar-label">CHAT</span>
+          </button>
+
+          <button id="toolbar-menu-btn" class="toolbar-btn" title="Game Menu">
+            <span class="btn-menu-icon">☰</span>
+            <span class="toolbar-label">MENU</span>
+          </button>
+        </nav>
+
+      </div>
+    </main>
+
+    <!-- POPUP 1: QUICK EMOJI + FAST CHAT PANEL (Anchored above 😀 button) -->
+    <div id="quick-reaction-panel" class="quick-panel hidden">
+      <div class="quick-panel-inner">
+        <div class="quick-tabs">
+          <button class="qtab-btn active" id="qtab-chat-btn">💬 Fast Chat</button>
+          <button class="qtab-btn" id="qtab-emoji-btn">😀 Reactions</button>
+          <button class="qtab-btn romantic-tab" id="qtab-love-btn">❤️ Romantic</button>
+        </div>
+
+        <!-- Fast Chat Phrases Pane -->
+        <div id="qpane-chat" class="qpane active">
+          <div class="fast-chat-grid">
+            <button class="fast-chat-btn" data-msg="Hello! 👋">Hello</button>
+            <button class="fast-chat-btn" data-msg="Good Luck! 🍀">Good Luck</button>
+            <button class="fast-chat-btn" data-msg="Thank you! 😊">Thank you!</button>
+            <button class="fast-chat-btn" data-msg="Haha! 😂">Haha</button>
+            <button class="fast-chat-btn" data-msg="Oops! 🙈">Oops</button>
+            <button class="fast-chat-btn" data-msg="Yes! 🎉">Yes!</button>
+            <button class="fast-chat-btn" data-msg="Good game! 🤝">Good game</button>
+            <button class="fast-chat-btn" data-msg="Lucky roll! 🎲">Lucky roll!</button>
+            <button class="fast-chat-btn" data-msg="Well Played! 👏">Well Played</button>
+            <button class="fast-chat-btn" data-msg="Faster Please ⏱️">Faster Please</button>
+            <button class="fast-chat-btn" data-msg="Please don't kill 😂">Please don't kill 😂</button>
+            <button class="fast-chat-btn" data-msg="Need a 6! 🎲">Need a 6!</button>
           </div>
         </div>
 
+        <!-- Normal Emojis Pane -->
+        <div id="qpane-emoji" class="qpane">
+          <div class="quick-emoji-grid">
+            <button class="quick-emoji-btn" data-emoji="😂">😂</button>
+            <button class="quick-emoji-btn" data-emoji="🤣">🤣</button>
+            <button class="quick-emoji-btn" data-emoji="😮">😮</button>
+            <button class="quick-emoji-btn" data-emoji="😡">😡</button>
+            <button class="quick-emoji-btn" data-emoji="😭">😭</button>
+            <button class="quick-emoji-btn" data-emoji="😍">😍</button>
+            <button class="quick-emoji-btn" data-emoji="😎">😎</button>
+            <button class="quick-emoji-btn" data-emoji="👏">👏</button>
+            <button class="quick-emoji-btn" data-emoji="👍">👍</button>
+            <button class="quick-emoji-btn" data-emoji="🔥">🔥</button>
+            <button class="quick-emoji-btn" data-emoji="😏">😏</button>
+            <button class="quick-emoji-btn" data-emoji="🙄">🙄</button>
+            <button class="quick-emoji-btn" data-emoji="😴">😴</button>
+            <button class="quick-emoji-btn" data-emoji="😜">😜</button>
+            <button class="quick-emoji-btn" data-emoji="🥳">🥳</button>
+            <button class="quick-emoji-btn" data-emoji="😱">😱</button>
+          </div>
+        </div>
+
+        <!-- Romantic / Couple Emojis Pane -->
+        <div id="qpane-love" class="qpane">
+          <div class="romantic-header">💖 For Deepak & Vandana 💖</div>
+          <div class="quick-emoji-grid romantic-grid">
+            <button class="quick-emoji-btn romantic" data-emoji="❤️">❤️</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💕">💕</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💖">💖</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💗">💗</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💓">💓</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💞">💞</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💘">💘</button>
+            <button class="quick-emoji-btn romantic" data-emoji="🥰">🥰</button>
+            <button class="quick-emoji-btn romantic" data-emoji="😘">😘</button>
+            <button class="quick-emoji-btn romantic" data-emoji="😍">😍</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💋">💋</button>
+            <button class="quick-emoji-btn romantic" data-emoji="🫶">🫶</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💏">💏</button>
+            <button class="quick-emoji-btn romantic" data-emoji="💑">💑</button>
+            <button class="quick-emoji-btn romantic" data-emoji="❤️🔥">❤️🔥</button>
+            <button class="quick-emoji-btn romantic" data-emoji="🌹">🌹</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Win Modal -->
-    <div id="win-modal" class="modal-overlay hidden">
-      <div class="modal-card win-card">
-        <div class="win-trophy">🏆</div>
-        <h2 id="winner-title">Victory!</h2>
-        <p id="winner-desc">Congratulations to the winner!</p>
-        <button id="rematch-btn" class="btn btn-primary" onclick="location.reload()">Play Again</button>
+    <!-- POPUP 2: FULL CHAT MODAL (Beige themed dialog matching screenshot) -->
+    <div id="chat-modal" class="modal-backdrop hidden">
+      <div class="modal-box chat-modal-box">
+        <div class="chat-modal-header">
+          <div class="chat-header-pill">Chat</div>
+          <button id="close-chat-btn" class="close-pill-btn">✕</button>
+        </div>
+        <div class="chat-warning-notice">
+          Abusing and harassing will lead to Chat Ban.
+        </div>
+
+        <div id="chat-messages-container" class="chat-messages-container">
+          <!-- Chat messages rendered here -->
+        </div>
+
+        <form id="full-chat-form" class="chat-input-bar">
+          <button type="button" id="chat-emoji-toggle-btn" class="chat-emoji-btn" title="Insert Emoji">😀</button>
+          <input type="text" id="full-chat-input" placeholder="Enter chat message" maxlength="100" autocomplete="off">
+          <button type="submit" class="chat-send-btn">SEND</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- POPUP 3: GAME MENU MODAL (☰) -->
+    <div id="menu-modal" class="modal-backdrop hidden">
+      <div class="modal-box menu-modal-box">
+        <div class="menu-modal-header">
+          <h3>🎮 Game Options</h3>
+          <button id="close-menu-btn" class="close-pill-btn">✕</button>
+        </div>
+        <div class="menu-items-list">
+          <button id="menu-rules-btn" class="menu-action-item">
+            <span class="menu-icon">📜</span>
+            <div class="menu-text">
+              <strong>Game Rules</strong>
+              <small>How to play & win</small>
+            </div>
+          </button>
+          <button id="menu-copy-btn" class="menu-action-item">
+            <span class="menu-icon">📋</span>
+            <div class="menu-text">
+              <strong>Copy Room Code</strong>
+              <small id="menu-room-code">------</small>
+            </div>
+          </button>
+          <button id="menu-sound-btn" class="menu-action-item">
+            <span class="menu-icon" id="sound-icon">🔊</span>
+            <div class="menu-text">
+              <strong id="sound-status-text">Sound: ON</strong>
+              <small>Toggle sound effects</small>
+            </div>
+          </button>
+          <button id="menu-leave-btn" class="menu-action-item danger">
+            <span class="menu-icon">🚪</span>
+            <div class="menu-text">
+              <strong>Leave Game</strong>
+              <small>Exit to main menu</small>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP 4: GAME RULES MODAL -->
+    <div id="rules-modal" class="modal-backdrop hidden">
+      <div class="modal-box rules-modal-box">
+        <div class="rules-modal-header">
+          <h3>📜 How to Play Ludo</h3>
+          <button id="close-rules-btn" class="close-pill-btn">✕</button>
+        </div>
+        <div class="rules-content">
+          <div class="rule-row">
+            <span class="rule-badge">🎲 6 to Unlock</span>
+            <p>Roll a <strong>6</strong> to bring a new token out of your home base onto the track.</p>
+          </div>
+          <div class="rule-row">
+            <span class="rule-badge">⭐ Extra Turn</span>
+            <p>Rolling a <strong>6</strong>, <strong>capturing</strong> an opponent's token, or reaching <strong>Home</strong> awards an extra dice roll.</p>
+          </div>
+          <div class="rule-row">
+            <span class="rule-badge">💥 Capture</span>
+            <p>Landing on an opponent's token on normal tiles captures it and sends it back to their base!</p>
+          </div>
+          <div class="rule-row">
+            <span class="rule-badge">🛡️ Safe Stars</span>
+            <p>Tokens on starred tiles ★ or start colored tiles are safe from capture.</p>
+          </div>
+          <div class="rule-row">
+            <span class="rule-badge">🏆 Victory</span>
+            <p>The first player to navigate all 4 tokens around the board and into the center home triangle wins the match!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP 5: WIN MODAL -->
+    <div id="win-modal" class="modal-backdrop hidden">
+      <div class="modal-box win-modal-box">
+        <div class="win-trophy-anim">🏆</div>
+        <h2 id="winner-title" class="win-heading">Victory!</h2>
+        <p id="winner-desc" class="win-sub">Congratulations on winning the match!</p>
+        <button id="rematch-btn" class="game-btn btn-gold" onclick="location.reload()">
+          <span>PLAY AGAIN</span>
+        </button>
       </div>
     </div>
 

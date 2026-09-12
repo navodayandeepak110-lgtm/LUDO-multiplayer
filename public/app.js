@@ -1,3 +1,7 @@
+/* ===================================================
+   MOBILE LUDO MULTIPLAYER - CLIENT JAVASCRIPT
+   =================================================== */
+
 const socket = io();
 
 // State
@@ -5,7 +9,9 @@ let myPlayer = null;
 let currentRoom = null;
 let isMyTurn = false;
 let validMovableTokens = [];
-let diceResultTimer = null;
+let soundEnabled = true;
+let unreadChatCount = 0;
+let isChatModalOpen = false;
 
 // Audio Synthesizer (Web Audio API)
 const AudioContextClass = window.AudioContext || window["webkitAudioContext"];
@@ -18,7 +24,7 @@ function initAudio() {
 }
 
 function playSound(type) {
-  if (!audioCtx) return;
+  if (!soundEnabled || !audioCtx) return;
   try {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -28,12 +34,12 @@ function playSound(type) {
 
     if (type === "roll") {
       osc.type = "triangle";
-      osc.frequency.setValueAtTime(300, now);
-      osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.18);
       gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
       osc.start(now);
-      osc.stop(now + 0.15);
+      osc.stop(now + 0.18);
     } else if (type === "move") {
       osc.type = "sine";
       osc.frequency.setValueAtTime(440, now);
@@ -50,6 +56,14 @@ function playSound(type) {
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
       osc.start(now);
       osc.stop(now + 0.3);
+    } else if (type === "pop") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(780, now + 0.08);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
     } else if (type === "win") {
       const notes = [523.25, 659.25, 783.99, 1046.5];
       notes.forEach((freq, idx) => {
@@ -70,7 +84,7 @@ function playSound(type) {
   }
 }
 
-// Coordinate mappings for 15x15 board
+// 15x15 Coordinate Mappings
 const PATH_COORDS = [
   [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
   [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
@@ -94,15 +108,7 @@ const HOME_STRETCH_COORDS = {
   blue: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]]
 };
 
-const CENTER_HOME_COORDS = {
-  red: [7, 6],
-  green: [6, 7],
-  yellow: [7, 8],
-  blue: [8, 7]
-};
-
 const START_OFFSETS = { red: 0, green: 13, yellow: 26, blue: 39 };
-const STAR_TILES = [8, 21, 34, 47];
 
 // DOM Elements
 const lobbyScreen = document.getElementById("lobby-screen");
@@ -121,7 +127,7 @@ const joinSection = document.getElementById("join-section");
 const createRoomBtn = document.getElementById("create-room-btn");
 const joinRoomBtn = document.getElementById("join-room-btn");
 
-const roomInfo = document.getElementById("room-info");
+const roomInfoPill = document.getElementById("room-info-pill");
 const displayRoomCode = document.getElementById("display-room-code");
 const copyCodeBtn = document.getElementById("copy-code-btn");
 const waitingCode = document.getElementById("waiting-code");
@@ -130,26 +136,53 @@ const playersList = document.getElementById("players-list");
 const hostControls = document.getElementById("host-controls");
 const startGameBtn = document.getElementById("start-game-btn");
 
+const topPlayerZone = document.getElementById("top-player-zone");
+const bottomPlayerZone = document.getElementById("bottom-player-zone");
+const leftPlayerZone = document.getElementById("left-player-zone");
+const rightPlayerZone = document.getElementById("right-player-zone");
 const ludoBoard = document.getElementById("ludo-board");
-const diceElement = document.getElementById("dice");
-const rollDiceBtn = document.getElementById("roll-dice-btn");
-const diceHint = document.getElementById("dice-hint");
-const diceResult = document.getElementById("dice-result");
-const turnBanner = document.getElementById("turn-banner");
-const turnText = document.getElementById("turn-text");
-const gamePlayersList = document.getElementById("game-players-list");
+const toastContainer = document.getElementById("toast-container");
+const fxLayer = document.getElementById("fx-layer");
 
-const chatToggle = document.getElementById("chat-toggle");
-const chatContent = document.getElementById("chat-content");
-const activityLog = document.getElementById("activity-log");
-const chatForm = document.getElementById("chat-form");
-const chatInput = document.getElementById("chat-input");
+// Toolbar & Popups
+const toolbarEmojiBtn = document.getElementById("toolbar-emoji-btn");
+const toolbarChatBtn = document.getElementById("toolbar-chat-btn");
+const toolbarMenuBtn = document.getElementById("toolbar-menu-btn");
+const chatBadge = document.getElementById("chat-badge");
+
+const quickReactionPanel = document.getElementById("quick-reaction-panel");
+const qtabChatBtn = document.getElementById("qtab-chat-btn");
+const qtabEmojiBtn = document.getElementById("qtab-emoji-btn");
+const qtabLoveBtn = document.getElementById("qtab-love-btn");
+const qpaneChat = document.getElementById("qpane-chat");
+const qpaneEmoji = document.getElementById("qpane-emoji");
+const qpaneLove = document.getElementById("qpane-love");
+
+const chatModal = document.getElementById("chat-modal");
+const closeChatBtn = document.getElementById("close-chat-btn");
+const chatMessagesContainer = document.getElementById("chat-messages-container");
+const fullChatForm = document.getElementById("full-chat-form");
+const fullChatInput = document.getElementById("full-chat-input");
+const chatEmojiToggleBtn = document.getElementById("chat-emoji-toggle-btn");
+
+const menuModal = document.getElementById("menu-modal");
+const closeMenuBtn = document.getElementById("close-menu-btn");
+const menuRulesBtn = document.getElementById("menu-rules-btn");
+const menuCopyBtn = document.getElementById("menu-copy-btn");
+const menuSoundBtn = document.getElementById("menu-sound-btn");
+const soundIcon = document.getElementById("sound-icon");
+const soundStatusText = document.getElementById("sound-status-text");
+const menuRoomCode = document.getElementById("menu-room-code");
+const menuLeaveBtn = document.getElementById("menu-leave-btn");
+
+const rulesModal = document.getElementById("rules-modal");
+const closeRulesBtn = document.getElementById("close-rules-btn");
 
 const winModal = document.getElementById("win-modal");
 const winnerTitle = document.getElementById("winner-title");
 const winnerDesc = document.getElementById("winner-desc");
 
-// Tab Switcher
+// Tab Switcher (Lobby)
 tabCreateBtn.addEventListener("click", () => {
   tabCreateBtn.classList.add("active");
   tabJoinBtn.classList.remove("active");
@@ -166,14 +199,209 @@ tabJoinBtn.addEventListener("click", () => {
   lobbyError.textContent = "";
 });
 
-// Chat Toggle Handler
-chatToggle.addEventListener("click", () => {
-  const isExpanded = chatContent.classList.toggle("expanded");
-  const icon = chatToggle.querySelector(".toggle-icon");
-  icon.textContent = isExpanded ? "▲" : "▼";
+// Quick Reaction Tabs
+qtabChatBtn.addEventListener("click", () => {
+  qtabChatBtn.classList.add("active");
+  qtabEmojiBtn.classList.remove("active");
+  qtabLoveBtn.classList.remove("active");
+  qpaneChat.classList.add("active");
+  qpaneEmoji.classList.remove("active");
+  qpaneLove.classList.remove("active");
 });
 
-// Build 15x15 Board Grid Layout
+qtabEmojiBtn.addEventListener("click", () => {
+  qtabEmojiBtn.classList.add("active");
+  qtabChatBtn.classList.remove("active");
+  qtabLoveBtn.classList.remove("active");
+  qpaneEmoji.classList.add("active");
+  qpaneChat.classList.remove("active");
+  qpaneLove.classList.remove("active");
+});
+
+qtabLoveBtn.addEventListener("click", () => {
+  qtabLoveBtn.classList.add("active");
+  qtabChatBtn.classList.remove("active");
+  qtabEmojiBtn.classList.remove("active");
+  qpaneLove.classList.add("active");
+  qpaneChat.classList.remove("active");
+  qpaneEmoji.classList.remove("active");
+});
+
+// Toolbar Actions
+toolbarEmojiBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  initAudio();
+  quickReactionPanel.classList.toggle("hidden");
+});
+
+document.addEventListener("click", (e) => {
+  if (!quickReactionPanel.classList.contains("hidden") &&
+      !quickReactionPanel.contains(e.target) &&
+      e.target !== toolbarEmojiBtn &&
+      !toolbarEmojiBtn.contains(e.target)) {
+    quickReactionPanel.classList.add("hidden");
+  }
+});
+
+toolbarChatBtn.addEventListener("click", () => {
+  initAudio();
+  openChatModal();
+});
+
+closeChatBtn.addEventListener("click", () => {
+  closeChatModal();
+});
+
+function openChatModal() {
+  chatModal.classList.remove("hidden");
+  isChatModalOpen = true;
+  unreadChatCount = 0;
+  chatBadge.classList.add("hidden");
+  chatBadge.textContent = "0";
+  setTimeout(() => {
+    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+  }, 50);
+}
+
+function closeChatModal() {
+  chatModal.classList.add("hidden");
+  isChatModalOpen = false;
+}
+
+chatEmojiToggleBtn.addEventListener("click", () => {
+  quickReactionPanel.classList.toggle("hidden");
+});
+
+// Menu Actions
+toolbarMenuBtn.addEventListener("click", () => {
+  initAudio();
+  menuModal.classList.remove("hidden");
+  if (currentRoom) {
+    menuRoomCode.textContent = "Code: " + currentRoom.code;
+  }
+});
+
+closeMenuBtn.addEventListener("click", () => {
+  menuModal.classList.add("hidden");
+});
+
+menuRulesBtn.addEventListener("click", () => {
+  menuModal.classList.add("hidden");
+  rulesModal.classList.remove("hidden");
+});
+
+closeRulesBtn.addEventListener("click", () => {
+  rulesModal.classList.add("hidden");
+});
+
+menuSoundBtn.addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  soundIcon.textContent = soundEnabled ? "🔊" : "🔇";
+  soundStatusText.textContent = soundEnabled ? "Sound: ON" : "Sound: OFF";
+  showToast(soundEnabled ? "🔊 Sound Enabled" : "🔇 Sound Muted");
+});
+
+menuCopyBtn.addEventListener("click", copyCode);
+
+menuLeaveBtn.addEventListener("click", () => {
+  if (confirm("Are you sure you want to leave the game?")) {
+    socket.emit("leave_room");
+    location.reload();
+  }
+});
+
+// Toast system
+function showToast(text) {
+  const toast = document.createElement("div");
+  toast.className = "game-toast";
+  toast.textContent = text;
+  toastContainer.appendChild(toast);
+  setTimeout(() => {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 2500);
+}
+
+// 1-Tap Fast Chat click handler
+document.querySelectorAll(".fast-chat-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    initAudio();
+    const msg = btn.getAttribute("data-msg");
+    socket.emit("send_reaction", { type: "fast_chat", content: msg });
+    quickReactionPanel.classList.add("hidden");
+  });
+});
+
+// 1-Tap Emoji click handler
+document.querySelectorAll(".quick-emoji-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    initAudio();
+    const emoji = btn.getAttribute("data-emoji");
+    const isRomantic = btn.classList.contains("romantic");
+    socket.emit("send_reaction", { type: "emoji", content: emoji, isRomantic });
+    quickReactionPanel.classList.add("hidden");
+  });
+});
+
+// Floating Reaction & Speech Bubble Renderer
+function displayPlayerReaction(data) {
+  const { senderId, sender, color, type, content, isRomantic } = data;
+  playSound(isRomantic ? "win" : "pop");
+
+  // Find player's avatar anchor in the DOM
+  const playerCard = document.querySelector(`[data-player-id="${senderId}"]`);
+  const anchor = playerCard ? playerCard.querySelector(".avatar-reaction-anchor") : null;
+
+  if (type === "fast_chat") {
+    if (anchor) {
+      const bubble = document.createElement("div");
+      bubble.className = "fast-chat-bubble";
+      bubble.textContent = content;
+      anchor.appendChild(bubble);
+      setTimeout(() => {
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+      }, 3000);
+    }
+    // Also append to chat history
+    appendChatMessage({
+      sender,
+      color,
+      text: content,
+      time: data.time || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      isMine: myPlayer && senderId === myPlayer.id
+    });
+  } else if (type === "emoji") {
+    if (anchor) {
+      const el = document.createElement("div");
+      el.className = "floating-emoji";
+      el.textContent = content;
+      anchor.appendChild(el);
+      setTimeout(() => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 2200);
+
+      if (isRomantic) {
+        // Create constellation of mini hearts
+        for (let i = 0; i < 6; i++) {
+          setTimeout(() => {
+            const h = document.createElement("div");
+            h.className = "heart-burst-particle";
+            h.textContent = ["❤️", "💖", "✨", "💕", "💋"][Math.floor(Math.random() * 5)];
+            const tx = (Math.random() - 0.5) * 100;
+            const ty = -(60 + Math.random() * 70);
+            h.style.setProperty("--tx", `${tx}px`);
+            h.style.setProperty("--ty", `${ty}px`);
+            anchor.appendChild(h);
+            setTimeout(() => {
+              if (h.parentNode) h.parentNode.removeChild(h);
+            }, 2500);
+          }, i * 150);
+        }
+      }
+    }
+  }
+}
+
+// Build 15x15 Ludo Board Grid Layout
 function buildBoardGrid() {
   ludoBoard.innerHTML = "";
 
@@ -225,7 +453,7 @@ function buildBoardGrid() {
     </div>`;
   ludoBoard.appendChild(blueBase);
 
-  // 5. Center Home (3x3 in middle)
+  // 5. Center Home (3x3 in middle) with 4 triangular home slots
   const centerHome = document.createElement("div");
   centerHome.className = "center-home";
   centerHome.innerHTML = `
@@ -234,13 +462,18 @@ function buildBoardGrid() {
       <polygon points="0,0 50,50 100,0" fill="#10b981" />
       <polygon points="100,0 50,50 100,100" fill="#f59e0b" />
       <polygon points="0,100 50,50 100,100" fill="#3b82f6" />
-    </svg>`;
+    </svg>
+    <div class="center-home-slots">
+      <div class="center-slot slot-red" id="center-home-red"></div>
+      <div class="center-slot slot-green" id="center-home-green"></div>
+      <div class="center-slot slot-yellow" id="center-home-yellow"></div>
+      <div class="center-slot slot-blue" id="center-home-blue"></div>
+    </div>`;
   ludoBoard.appendChild(centerHome);
 
-  // 6. Generate regular track cells (excluding bases and center)
+  // 6. Regular track cells
   for (let r = 0; r < 15; r++) {
     for (let c = 0; c < 15; c++) {
-      // Skip cells covered by bases or center
       const inRedBase = r < 6 && c < 6;
       const inGreenBase = r < 6 && c > 8;
       const inYellowBase = r > 8 && c > 8;
@@ -254,19 +487,19 @@ function buildBoardGrid() {
         cell.style.gridColumn = `${c + 1} / ${c + 2}`;
         cell.id = `cell-${r}-${c}`;
 
-        // Color starts
+        // Start tiles
         if (r === 6 && c === 1) cell.classList.add("cell-red-start");
         if (r === 1 && c === 8) cell.classList.add("cell-green-start");
         if (r === 8 && c === 13) cell.classList.add("cell-yellow-start");
         if (r === 13 && c === 6) cell.classList.add("cell-blue-start");
 
-        // Color home runs
+        // Home stretches
         if (r === 7 && c >= 1 && c <= 5) cell.classList.add("cell-red-home");
         if (c === 7 && r >= 1 && r <= 5) cell.classList.add("cell-green-home");
         if (r === 7 && c >= 9 && c <= 13) cell.classList.add("cell-yellow-home");
         if (c === 7 && r >= 9 && r <= 13) cell.classList.add("cell-blue-home");
 
-        // Star safe spots
+        // Safe star spot cells
         if (
           (r === 2 && c === 6) ||
           (r === 6 && c === 12) ||
@@ -275,6 +508,12 @@ function buildBoardGrid() {
         ) {
           cell.innerHTML = '<span class="star-icon">★</span>';
         }
+
+        // Colored entry arrows
+        if (r === 7 && c === 0) cell.innerHTML = '<span class="entry-arrow" style="color:var(--red);">▶</span>';
+        if (r === 0 && c === 7) cell.innerHTML = '<span class="entry-arrow" style="color:var(--green);">▼</span>';
+        if (r === 7 && c === 14) cell.innerHTML = '<span class="entry-arrow" style="color:var(--yellow);">◀</span>';
+        if (r === 14 && c === 7) cell.innerHTML = '<span class="entry-arrow" style="color:var(--blue);">▲</span>';
 
         const tokensContainer = document.createElement("div");
         tokensContainer.className = "cell-tokens-container";
@@ -286,27 +525,27 @@ function buildBoardGrid() {
   }
 }
 
-// Helper to get Board Cell for Coordinate
 function getCellElement(r, c) {
   return document.getElementById(`cell-${r}-${c}`);
 }
 
 // Render Board Pieces
 function renderBoard(gameState) {
-  // 1. Clear all track cells
   document.querySelectorAll(".cell-tokens-container").forEach((cont) => {
     cont.innerHTML = "";
     cont.classList.remove("multi");
   });
 
-  // 2. Clear all base slots
   document.querySelectorAll(".base-slot").forEach((slot) => {
+    slot.innerHTML = "";
+  });
+
+  document.querySelectorAll(".center-slot").forEach((slot) => {
     slot.innerHTML = "";
   });
 
   if (!gameState || !gameState.tokens) return;
 
-  // 3. Place tokens
   currentRoom.players.forEach((player) => {
     const color = player.color;
     const tokenSteps = gameState.tokens[color] || [];
@@ -325,11 +564,9 @@ function renderBoard(gameState) {
       }
 
       if (step === -1) {
-        // Inside Base
         const baseSlot = document.getElementById(`slot-${color}-${tokenIdx}`);
         if (baseSlot) baseSlot.appendChild(tokenEl);
       } else if (step >= 0 && step < 51) {
-        // Main Track
         const globalIdx = (START_OFFSETS[color] + step) % 52;
         const [r, c] = PATH_COORDS[globalIdx];
         const cell = getCellElement(r, c);
@@ -343,7 +580,6 @@ function renderBoard(gameState) {
           }
         }
       } else if (step >= 51 && step <= 55) {
-        // Home stretch
         const stretchIdx = step - 51;
         const [r, c] = HOME_STRETCH_COORDS[color][stretchIdx];
         const cell = getCellElement(r, c);
@@ -357,77 +593,114 @@ function renderBoard(gameState) {
           }
         }
       } else if (step === 56) {
-        // Reached Center Home
         tokenEl.style.transform = "scale(0.85)";
         tokenEl.title = "Home!";
-        const [r, c] = CENTER_HOME_COORDS[color];
-        const cell = getCellElement(r, c);
-        if (cell) {
-          const container = cell.querySelector(".cell-tokens-container");
-          if (container) container.appendChild(tokenEl);
+        const centerHomeSlot = document.getElementById(`center-home-${color}`);
+        if (centerHomeSlot) {
+          centerHomeSlot.appendChild(tokenEl);
         }
       }
     });
   });
 }
 
-// Render Dice Faces
-function updateDiceFace(value) {
-  diceElement.className = `dice dice-${value || 1}`;
-  diceElement.innerHTML = "";
-  for (let i = 0; i < (value || 1); i++) {
-    const dot = document.createElement("div");
-    dot.className = "dot";
-    diceElement.appendChild(dot);
-  }
+// Render Player Profile Card HTML
+function createPlayerProfileHTML(player, isCurrentTurn, isMe) {
+  const isFemale = player.name.toLowerCase().includes("vandana") || player.name.toLowerCase().includes("girl");
+  const avatarChar = isFemale ? "👩" : (isMe ? "👤" : "🧑");
+  return `
+    <div class="player-profile-card ${isCurrentTurn ? "active-turn" : ""}" data-player-id="${player.id}">
+      <div class="avatar-reaction-anchor"></div>
+      <div class="avatar-wrapper">
+        <div class="avatar-frame">
+          <span class="avatar-char">${avatarChar}</span>
+        </div>
+        <div class="avatar-gift-badge">🎁</div>
+        ${isCurrentTurn ? `<div class="avatar-turn-badge">${isMe ? "YOUR TURN" : "TURN"}</div>` : ""}
+      </div>
+      <div class="player-details">
+        <div class="player-name-row">
+          <span class="player-flag">🇮🇳</span>
+          <strong class="player-title">${player.name} ${isMe ? "(You)" : ""}</strong>
+        </div>
+        <div class="player-status-row">
+          <span class="status-dot ${player.connected ? "" : "offline"}"></span>
+          <span class="player-color-pill ${player.color}">${player.color.toUpperCase()}</span>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
-// Render Turn Status & Player List
+// Render Dice Controls Attached to Local Player
+function createDiceControlsHTML(diceValue, canRoll) {
+  const dotsHtml = Array.from({ length: diceValue || 1 }, () => '<div class="dice-dot"></div>').join("");
+  return `
+    <div class="dice-interactive-container">
+      <div class="dice-box ${canRoll ? "active" : ""}" id="game-dice-box" title="Tap to Roll">
+        <div class="dice-3d dice-face-${diceValue || 1}" id="game-dice-cube">
+          ${dotsHtml}
+        </div>
+      </div>
+      <div class="dice-action-tag">
+        <button class="roll-btn-pill" id="action-roll-btn" ${canRoll ? "" : "disabled"}>
+          ROLL
+        </button>
+        <span class="dice-hint-txt">${canRoll ? "Your turn to roll!" : (isMyTurn ? "Select a token" : "Waiting...")}</span>
+      </div>
+    </div>
+  `;
+}
+
+// Update Game Screen UI
 function updateGameUI(room) {
   currentRoom = room;
   const currentPlayer = room.players[room.gameState.turnIndex];
   isMyTurn = currentPlayer && myPlayer && currentPlayer.id === myPlayer.id;
+  const canRoll = isMyTurn && !room.gameState.hasRolled;
 
-  // Turn Banner
-  turnBanner.className = `turn-indicator active-${currentPlayer.color}`;
-  turnText.textContent = isMyTurn
-    ? `✨ It's YOUR turn! (${currentPlayer.color.toUpperCase()})`
-    : `⏳ ${currentPlayer.name}'s turn (${currentPlayer.color.toUpperCase()})`;
+  // Split players into Opponents (Top / Sides) and Me (Bottom)
+  const opponents = room.players.filter((p) => p.id !== myPlayer.id);
 
-  // Dice controls
-  if (isMyTurn) {
-    if (!room.gameState.hasRolled) {
-      rollDiceBtn.disabled = false;
-      diceHint.textContent = "Click 'Roll Dice' or tap the dice!";
-    } else {
-      rollDiceBtn.disabled = true;
-      diceHint.textContent = validMovableTokens.length > 0
-        ? "Tap a glowing piece to move!"
-        : "No valid moves. Passing turn...";
-    }
-  } else {
-    rollDiceBtn.disabled = true;
-    diceHint.textContent = `Waiting for ${currentPlayer.name}...`;
+  // Top Opponent Zone (Primary Opponent in 2P, e.g. Vandana)
+  topPlayerZone.innerHTML = "";
+  if (opponents.length >= 1) {
+    const primaryOpponent = opponents[0];
+    const isCurrent = primaryOpponent.id === currentPlayer.id;
+    topPlayerZone.innerHTML = createPlayerProfileHTML(primaryOpponent, isCurrent, false);
   }
 
-  // Players list in compact bar
-  gamePlayersList.innerHTML = "";
-  room.players.forEach((p) => {
-    const isCurrent = p.id === currentPlayer.id;
-    const isMe = myPlayer && p.id === myPlayer.id;
-    const card = document.createElement("div");
-    card.className = `player-compact ${p.color} ${isCurrent ? "active-turn" : ""}`;
-    card.innerHTML = `
-      <div class="player-compact-avatar">${p.name.charAt(0).toUpperCase()}</div>
-      <div class="player-compact-info">
-        <span class="player-compact-name">${p.name} ${isMe ? "(You)" : ""}</span>
-        <span class="player-compact-status ${p.connected ? "online" : "offline"}">
-          ${p.connected ? (isCurrent ? "Rolling..." : "Ready") : "Offline"}
-        </span>
-      </div>
-    `;
-    gamePlayersList.appendChild(card);
-  });
+  // Side Opponents (for 3P / 4P games)
+  leftPlayerZone.innerHTML = "";
+  rightPlayerZone.innerHTML = "";
+  if (opponents.length >= 2) {
+    leftPlayerZone.style.display = "flex";
+    const isCurrent = opponents[1].id === currentPlayer.id;
+    leftPlayerZone.innerHTML = createPlayerProfileHTML(opponents[1], isCurrent, false);
+  } else {
+    leftPlayerZone.style.display = "none";
+  }
+
+  if (opponents.length >= 3) {
+    rightPlayerZone.style.display = "flex";
+    const isCurrent = opponents[2].id === currentPlayer.id;
+    rightPlayerZone.innerHTML = createPlayerProfileHTML(opponents[2], isCurrent, false);
+  } else {
+    rightPlayerZone.style.display = "none";
+  }
+
+  // Bottom Zone: My Profile + Interactive 3D Dice
+  bottomPlayerZone.innerHTML = "";
+  const isMyTurnActive = currentPlayer && myPlayer && currentPlayer.id === myPlayer.id;
+  const myProfileHtml = createPlayerProfileHTML(myPlayer, isMyTurnActive, true);
+  const diceControlsHtml = createDiceControlsHTML(room.gameState.diceValue, canRoll);
+  bottomPlayerZone.innerHTML = myProfileHtml + diceControlsHtml;
+
+  // Attach Dice click listeners
+  const diceBox = document.getElementById("game-dice-box");
+  const actionRollBtn = document.getElementById("action-roll-btn");
+  if (diceBox && canRoll) diceBox.addEventListener("click", onRollDice);
+  if (actionRollBtn && canRoll) actionRollBtn.addEventListener("click", onRollDice);
 
   renderBoard(room.gameState);
 }
@@ -437,8 +710,13 @@ function onRollDice() {
   initAudio();
   if (!isMyTurn || currentRoom.gameState.hasRolled) return;
   playSound("roll");
-  diceElement.classList.add("rolling");
-  setTimeout(() => diceElement.classList.remove("rolling"), 500);
+
+  const diceCube = document.getElementById("game-dice-cube");
+  if (diceCube) {
+    diceCube.classList.add("rolling");
+    setTimeout(() => diceCube.classList.remove("rolling"), 500);
+  }
+
   socket.emit("roll_dice");
 }
 
@@ -448,29 +726,27 @@ function onTokenClick(tokenIndex) {
   socket.emit("move_token", { tokenIndex });
 }
 
-rollDiceBtn.addEventListener("click", onRollDice);
-diceElement.addEventListener("click", onRollDice);
-
 // Room Actions
 createRoomBtn.addEventListener("click", () => {
   initAudio();
-  const name = playerNameInput.value.trim() || "Player 1";
+  const name = playerNameInput.value.trim() || "Deepak";
   const maxPlayers = document.querySelector('input[name="max-players"]:checked').value;
   socket.emit("create_room", { playerName: name, maxPlayers });
 });
 
 joinRoomBtn.addEventListener("click", () => {
   initAudio();
-  const name = playerNameInput.value.trim() || "Player 2";
+  const name = playerNameInput.value.trim() || "Vandana";
   const code = roomCodeInput.value.trim();
   if (!code) {
-    lobbyError.textContent = "Please enter a game code.";
+    lobbyError.textContent = "Please enter a room code.";
     return;
   }
   socket.emit("join_room", { roomCode: code, playerName: name });
 });
 
 startGameBtn.addEventListener("click", () => {
+  initAudio();
   socket.emit("start_game");
 });
 
@@ -478,36 +754,40 @@ function copyCode() {
   const code = currentRoom ? currentRoom.code : "";
   if (!code) return;
   navigator.clipboard.writeText(code).then(() => {
-    alert(`Game code ${code} copied to clipboard! Share it with your friend.`);
+    showToast(`📋 Code ${code} copied to clipboard!`);
   });
 }
 
 copyCodeBtn.addEventListener("click", copyCode);
 waitingCopyBtn.addEventListener("click", copyCode);
 
-// Chat Form
-chatForm.addEventListener("submit", (e) => {
+// Full Chat Form
+fullChatForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  const msg = chatInput.value.trim();
+  const msg = fullChatInput.value.trim();
   if (!msg) return;
   socket.emit("send_message", { message: msg });
-  chatInput.value = "";
+  fullChatInput.value = "";
 });
 
-function appendLog(text) {
-  const entry = document.createElement("div");
-  entry.className = "log-entry";
-  entry.textContent = text;
-  activityLog.appendChild(entry);
-  activityLog.scrollTop = activityLog.scrollHeight;
-}
+function appendChatMessage(data) {
+  const { sender, color, text, time, isMine } = data;
+  const msgRow = document.createElement("div");
+  msgRow.className = `chat-msg-row ${isMine ? "mine" : "opponent"}`;
+  msgRow.innerHTML = `
+    <span class="chat-msg-sender" style="color:var(--${color})">${sender}</span>
+    <div class="chat-msg-bubble">${text}</div>
+    <span class="chat-msg-time">${time}</span>
+  `;
+  chatMessagesContainer.appendChild(msgRow);
+  chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
 
-function appendChat(data) {
-  const entry = document.createElement("div");
-  entry.className = "chat-entry";
-  entry.innerHTML = `<span class="sender" style="color:var(--${data.color})">${data.sender}:</span> <span>${data.text}</span>`;
-  activityLog.appendChild(entry);
-  activityLog.scrollTop = activityLog.scrollHeight;
+  if (!isChatModalOpen && !isMine) {
+    unreadChatCount++;
+    chatBadge.textContent = String(unreadChatCount);
+    chatBadge.classList.remove("hidden");
+    showToast(`💬 ${sender}: ${text.substring(0, 25)}`);
+  }
 }
 
 // Socket Events
@@ -517,7 +797,7 @@ socket.on("room_joined", ({ roomCode, isHost, player, roomState }) => {
 
   displayRoomCode.textContent = roomCode;
   waitingCode.textContent = roomCode;
-  roomInfo.classList.remove("hidden");
+  roomInfoPill.classList.remove("hidden");
 
   lobbyScreen.classList.remove("active");
   waitingScreen.classList.add("active");
@@ -538,13 +818,13 @@ function renderWaitingPlayers(room) {
   playersList.innerHTML = "";
   room.players.forEach((p) => {
     const item = document.createElement("div");
-    item.className = "player-tag";
+    item.className = "player-status-tag";
     item.innerHTML = `
-      <div>
-        <span class="color-dot dot-${p.color}"></span>
-        <span>${p.name}</span>
+      <div class="player-tag-left">
+        <span class="color-badge ${p.color}"></span>
+        <span>${p.name} ${myPlayer && p.id === myPlayer.id ? "(You)" : ""}</span>
       </div>
-      <span>${p.color.toUpperCase()}</span>
+      <span style="color:var(--${p.color});font-weight:700;">${p.color.toUpperCase()}</span>
     `;
     playersList.appendChild(item);
   });
@@ -557,40 +837,25 @@ socket.on("game_started", (room) => {
 
   buildBoardGrid();
   updateGameUI(room);
-  room.gameState.logs.forEach((log) => appendLog(log));
+  showToast(`🎲 Game Started! ${room.players[0].name}'s turn`);
 });
 
 socket.on("dice_rolled", ({ room, diceValue, validMoves, autoPass }) => {
   currentRoom = room;
   validMovableTokens = validMoves || [];
   playSound("roll");
-  updateDiceFace(diceValue);
   updateGameUI(room);
 
   const rollingPlayer = room.players[room.gameState.turnIndex];
-  appendLog(`${rollingPlayer.name} rolled a ${diceValue}.`);
-
-  if (diceResult) {
-    if (diceResultTimer) clearTimeout(diceResultTimer);
-    if (diceValue === 6) {
-      diceResult.className = "dice-result six";
-      diceResult.textContent = isMyTurn ? "🎉 You rolled a 6! Extra roll on move!" : `🎲 ${rollingPlayer.name} rolled a 6!`;
-      diceResult.classList.remove("hidden");
-    } else {
-      diceResult.className = "dice-result";
-      diceResult.textContent = `Rolled: ${diceValue}`;
-      diceResult.classList.remove("hidden");
-    }
-    diceResultTimer = setTimeout(() => {
-      diceResult.classList.add("hidden");
-    }, 2500);
+  if (diceValue === 6) {
+    showToast(`🎉 ${rollingPlayer.name} rolled a 6! Extra roll!`);
   }
 
-  // Auto move if only 1 single valid move is available for convenience
+  // Convenient auto-move if only 1 single valid token move
   if (isMyTurn && validMoves.length === 1 && !autoPass) {
     setTimeout(() => {
       onTokenClick(validMoves[0]);
-    }, 400);
+    }, 450);
   }
 });
 
@@ -598,19 +863,25 @@ socket.on("token_moved", ({ room, capturedTokens, bonusRoll }) => {
   validMovableTokens = [];
   currentRoom = room;
 
-  playSound(capturedTokens && capturedTokens.length > 0 ? "capture" : "move");
-  updateGameUI(room);
-
-  if (bonusRoll) {
-    appendLog("⭐ Extra roll awarded!");
+  if (capturedTokens && capturedTokens.length > 0) {
+    playSound("capture");
+    showToast(`💥 Token Captured! Extra turn awarded!`);
+  } else {
+    playSound("move");
   }
+
+  if (bonusRoll && (!capturedTokens || capturedTokens.length === 0)) {
+    showToast("⭐ Extra turn awarded!");
+  }
+
+  updateGameUI(room);
 });
 
 socket.on("turn_passed", ({ room, reason }) => {
   validMovableTokens = [];
   currentRoom = room;
   updateGameUI(room);
-  if (reason) appendLog(`Turn passed (${reason}).`);
+  if (reason) showToast(`Turn passed: ${reason}`);
 });
 
 socket.on("game_over", ({ room, winner }) => {
@@ -619,23 +890,30 @@ socket.on("game_over", ({ room, winner }) => {
   playSound("win");
 
   winnerTitle.textContent = `${winner.name} Won! 🏆`;
-  winnerDesc.textContent = `${winner.name} (${winner.color.toUpperCase()}) successfully navigated all 4 tokens home!`;
+  winnerDesc.textContent = `${winner.name} successfully navigated all 4 tokens to Home!`;
   winModal.classList.remove("hidden");
 });
 
 socket.on("chat_message", (data) => {
-  appendChat(data);
+  appendChatMessage({
+    ...data,
+    isMine: myPlayer && data.senderId === myPlayer.id
+  });
+});
+
+socket.on("player_reaction", (data) => {
+  displayPlayerReaction(data);
 });
 
 socket.on("player_disconnected", ({ player }) => {
-  appendLog(`⚠️ ${player.name} disconnected.`);
+  showToast(`⚠️ ${player.name} disconnected.`);
 });
 
 socket.on("error_message", (msg) => {
   if (lobbyScreen.classList.contains("active")) {
     lobbyError.textContent = msg;
   } else {
-    alert(msg);
+    showToast(`⚠️ ${msg}`);
   }
 });
 

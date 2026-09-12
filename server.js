@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
@@ -376,6 +376,8 @@ io.on("connection", (socket) => {
     if (!player) return;
 
     const chatEntry = {
+      id: Math.random().toString(36).substring(2, 9),
+      senderId: player.id,
       sender: player.name,
       color: player.color,
       text: message.substring(0, 100),
@@ -383,6 +385,45 @@ io.on("connection", (socket) => {
     };
 
     io.to(room.code).emit("chat_message", chatEntry);
+  });
+
+  // Reaction / Fast Chat / Couple Emojis
+  socket.on("send_reaction", ({ type, content, isRomantic }) => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || !content) return;
+    const player = room.players.find((p) => p.id === socket.id);
+    if (!player) return;
+
+    const reactionData = {
+      id: Math.random().toString(36).substring(2, 9),
+      senderId: player.id,
+      sender: player.name,
+      color: player.color,
+      type: type || "emoji", // "emoji" | "fast_chat" | "couple_effect"
+      content: String(content).substring(0, 60),
+      isRomantic: Boolean(isRomantic),
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+
+    io.to(room.code).emit("player_reaction", reactionData);
+  });
+
+  // Leave Room
+  socket.on("leave_room", () => {
+    const roomCode = socket.roomCode;
+    if (!roomCode || !rooms.has(roomCode)) return;
+
+    const room = rooms.get(roomCode);
+    const playerIndex = room.players.findIndex((p) => p.id === socket.id);
+    if (playerIndex !== -1) {
+      const player = room.players[playerIndex];
+      player.connected = false;
+      room.gameState.logs.push(`${player.name} left the game.`);
+      socket.leave(roomCode);
+      socket.roomCode = null;
+
+      io.to(roomCode).emit("player_disconnected", { room, player });
+    }
   });
 
   // Disconnect
