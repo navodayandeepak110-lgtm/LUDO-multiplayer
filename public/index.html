@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D❤️V. LUDO - Play with Friends</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">
+        <span class="dice-icon">🎲</span>
+        <h1>D❤️V. <span>LUDO</span></h1>
+      </div>
+      <div id="room-info" class="room-badge hidden">
+        <span>Room Code: <strong id="display-room-code">------</strong></span>
+        <button id="copy-code-btn" title="Copy code to share">📋 Copy</button>
+      </div>
+    </header>
+
+    <!-- Modal / Lobby Screen -->
+    <div id="lobby-screen" class="view-screen active">
+      <div class="card lobby-card">
+        <h2>Play with Friends</h2>
+        <p class="subtitle">Create a private room or enter a code to join your friend from anywhere!</p>
+
+        <div class="input-group">
+          <label for="player-name">Your Name</label>
+          <input type="text" id="player-name" placeholder="Enter your nickname" maxlength="15" autofocus>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" id="tab-create-btn">Create Game</button>
+          <button class="tab-btn" id="tab-join-btn">Join Game</button>
+        </div>
+
+        <!-- Create Tab Content -->
+        <div id="create-section" class="tab-content active">
+          <div class="input-group">
+            <label>Number of Players</label>
+            <div class="player-count-selector">
+              <label class="radio-label">
+                <input type="radio" name="max-players" value="2" checked>
+                <span>2 Players (1v1)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="max-players" value="3">
+                <span>3 Players</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="max-players" value="4">
+                <span>4 Players</span>
+              </label>
+            </div>
+          </div>
+          <button id="create-room-btn" class="btn btn-primary">Create Room & Play</button>
+        </div>
+
+        <!-- Join Tab Content -->
+        <div id="join-section" class="tab-content">
+          <div class="input-group">
+            <label for="room-code-input">Game Code</label>
+            <input type="text" id="room-code-input" placeholder="e.g. 7K2X9" maxlength="6" style="text-transform: uppercase;">
+          </div>
+          <button id="join-room-btn" class="btn btn-success">Join Room</button>
+        </div>
+
+        <div id="lobby-error" class="error-text"></div>
+      </div>
+    </div>
+
+    <!-- Waiting Room View (Before Start) -->
+    <div id="waiting-screen" class="view-screen">
+      <div class="card waiting-card">
+        <h2>Waiting for Players...</h2>
+        <div class="share-box">
+          <p>Share this code with your friend:</p>
+          <div class="code-pill">
+            <span id="waiting-code">------</span>
+            <button id="waiting-copy-btn" class="btn btn-sm">Copy Code</button>
+          </div>
+        </div>
+
+        <div class="players-list-box">
+          <h3>Connected Players:</h3>
+          <div id="players-list" class="players-list"></div>
+        </div>
+
+        <div id="host-controls" class="host-controls hidden">
+          <button id="start-game-btn" class="btn btn-primary">Start Game Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Game View -->
+    <div id="game-screen" class="view-screen">
+      <div class="game-layout">
+        
+        <!-- Left Side: Player Cards & Turn Indicator -->
+        <div class="players-sidebar">
+          <div class="turn-banner" id="turn-banner">
+            <span id="turn-text">Player's Turn</span>
+          </div>
+
+          <div id="game-players-list" class="game-players-container">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Dice Control Box -->
+          <div class="dice-box card">
+            <h3>Your Turn</h3>
+            <div class="dice-wrapper">
+              <div id="dice" class="dice dice-1">
+                <div class="dot center"></div>
+              </div>
+            </div>
+            <button id="roll-dice-btn" class="btn btn-roll" disabled>Roll Dice</button>
+            <p id="dice-hint" class="dice-hint">Waiting for your turn...</p>
+          </div>
+        </div>
+
+        <!-- Center: 15x15 Ludo Board -->
+        <div class="board-container">
+          <div id="ludo-board" class="ludo-board">
+            <!-- 15x15 grid cells injected dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- Right Side: Activity Log & Chat -->
+        <div class="chat-sidebar card">
+          <div class="chat-header">
+            <h3>Game Activity & Chat</h3>
+          </div>
+          <div id="activity-log" class="activity-log"></div>
+          <form id="chat-form" class="chat-form">
+            <input type="text" id="chat-input" placeholder="Type message..." maxlength="100">
+            <button type="submit" class="btn btn-sm">Send</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="modal-overlay hidden">
+      <div class="modal-card win-card">
+        <div class="win-trophy">🏆</div>
+        <h2 id="winner-title">Victory!</h2>
+        <p id="winner-desc">Congratulations to the winner!</p>
+        <button id="rematch-btn" class="btn btn-primary" onclick="location.reload()">Play Again</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
