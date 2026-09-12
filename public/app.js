@@ -154,13 +154,44 @@ const PATH_COORDS = [
 ];
 
 const HOME_STRETCH_COORDS = {
-  red: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]],
-  green: [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7]],
-  yellow: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]],
-  blue: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]]
+  yellow: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]],
+  blue: [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7]],
+  red: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]],
+  green: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]]
 };
 
-const START_OFFSETS = { red: 0, green: 13, yellow: 26, blue: 39 };
+const START_OFFSETS = { yellow: 0, blue: 13, red: 26, green: 39 };
+
+// Illustrated High-Res Avatars matching reference screenshot
+const AVATAR_FEMALE = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="bgf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%23dbeafe"/><stop offset="100%" stop-color="%23bfdbfe"/></linearGradient></defs><rect width="100" height="100" rx="16" fill="url(%23bgf)"/><path d="M50 78 C35 78 20 86 16 100 L84 100 C80 86 65 78 50 78 Z" fill="%2338bdf8"/><path d="M42 78 L50 90 L58 78 Z" fill="%23ffffff"/><path d="M38 52 C38 66 43 76 50 76 C57 76 62 66 62 52 C62 38 57 30 50 30 C43 30 38 38 38 52 Z" fill="%23fed7aa"/><path d="M33 42 C32 23 40 16 50 16 C60 16 68 23 67 42 C67 48 65 56 63 58 C60 52 63 34 50 34 C37 34 40 52 37 58 C35 56 33 48 33 42 Z" fill="%231e1b4b"/><circle cx="45" cy="50" r="2.5" fill="%230f172a"/><circle cx="55" cy="50" r="2.5" fill="%230f172a"/><path d="M46 62 Q50 66 54 62" stroke="%23e11d48" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="41" cy="54" r="3" fill="%23fda4af" opacity="0.6"/><circle cx="59" cy="54" r="3" fill="%23fda4af" opacity="0.6"/></svg>`;
+
+const AVATAR_MALE = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="bgm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="%231e293b"/><stop offset="100%" stop-color="%230f172a"/></linearGradient></defs><rect width="100" height="100" rx="16" fill="url(%23bgm)"/><path d="M50 78 C35 78 20 86 16 100 L84 100 C80 86 65 78 50 78 Z" fill="%23334155"/><path d="M42 78 L50 88 L58 78 Z" fill="%23f8fafc"/><path d="M38 52 C38 66 43 76 50 76 C57 76 62 66 62 52 C62 38 57 30 50 30 C43 30 38 38 38 52 Z" fill="%23fed7aa"/><path d="M34 38 C34 22 42 16 50 16 C58 16 66 22 66 38 C64 30 58 26 50 26 C42 26 36 30 34 38 Z" fill="%231c1917"/><circle cx="45" cy="50" r="2.5" fill="%230f172a"/><circle cx="55" cy="50" r="2.5" fill="%230f172a"/><path d="M46 62 Q50 65 54 62" stroke="%23c2410c" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
+
+// Helper to generate 3D Pawn SVG
+function getPawnSvgHtml(color) {
+  return `
+    <svg class="pawn-svg" viewBox="0 0 36 50" fill="none">
+      <ellipse cx="18" cy="46" rx="13" ry="3.5" fill="rgba(0,0,0,0.28)"/>
+      <ellipse cx="18" cy="42" rx="12" ry="4" fill="url(#pawnBase-${color})"/>
+      <path d="M6 42 C6 38 10 36 18 36 C26 36 30 38 30 42 C30 46 26 48 18 48 C10 48 6 46 6 42 Z" fill="url(#pawnBase-${color})"/>
+      <path d="M10 40 C12.5 28 13.5 21 15 17 C16.5 17 19.5 17 21 17 C22.5 21 23.5 28 26 40 Z" fill="url(#pawnBody-${color})"/>
+      <ellipse cx="18" cy="17" rx="5.5" ry="1.6" fill="url(#pawnRing-${color})"/>
+      <circle cx="18" cy="9.5" r="8" fill="url(#pawnHead-${color})"/>
+      <ellipse cx="15.5" cy="7" rx="2.5" ry="1.6" fill="white" opacity="0.65" transform="rotate(-25 15.5 7)"/>
+    </svg>
+  `;
+}
+
+// Helper to generate Star SVG
+function getStarSvgHtml(colorClass = "") {
+  return `<svg class="star-svg ${colorClass}" viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" /></svg>`;
+}
+
+// Helper to generate Chevron SVG
+function getChevronSvgHtml(dir, colorClass = "") {
+  const rot = dir === "right" ? "0" : dir === "down" ? "90" : dir === "left" ? "180" : "270";
+  return `<svg class="chevron-svg ${colorClass}" style="transform:rotate(${rot}deg)" viewBox="0 0 24 24"><path d="M8 5 L15 12 L8 19" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
 
 // DOM Elements
 const lobbyScreen = document.getElementById("lobby-screen");
@@ -454,7 +485,7 @@ function displayPlayerReaction(data) {
       if (emojiEl.parentNode) emojiEl.parentNode.removeChild(emojiEl);
     }, 2200);
 
-    // Romantic Heart Particle Constellation
+    // Heart Particle Constellation
     if (isRomantic) {
       for (let i = 0; i < 7; i++) {
         setTimeout(() => {
@@ -478,35 +509,11 @@ function displayPlayerReaction(data) {
   }
 }
 
-// Build 15x15 Ludo Board Grid Layout
+// Build 15x15 Ludo Board Grid Layout matching Reference Screenshot
 function buildBoardGrid() {
   ludoBoard.innerHTML = "";
 
-  // 1. Red Base (Top-Left 6x6)
-  const redBase = document.createElement("div");
-  redBase.className = "base-red";
-  redBase.innerHTML = `
-    <div class="base-inner">
-      <div class="base-slot" id="slot-red-0"></div>
-      <div class="base-slot" id="slot-red-1"></div>
-      <div class="base-slot" id="slot-red-2"></div>
-      <div class="base-slot" id="slot-red-3"></div>
-    </div>`;
-  ludoBoard.appendChild(redBase);
-
-  // 2. Green Base (Top-Right 6x6)
-  const greenBase = document.createElement("div");
-  greenBase.className = "base-green";
-  greenBase.innerHTML = `
-    <div class="base-inner">
-      <div class="base-slot" id="slot-green-0"></div>
-      <div class="base-slot" id="slot-green-1"></div>
-      <div class="base-slot" id="slot-green-2"></div>
-      <div class="base-slot" id="slot-green-3"></div>
-    </div>`;
-  ludoBoard.appendChild(greenBase);
-
-  // 3. Yellow Base (Bottom-Right 6x6)
+  // 1. Yellow Base (Top-Left 6x6)
   const yellowBase = document.createElement("div");
   yellowBase.className = "base-yellow";
   yellowBase.innerHTML = `
@@ -518,10 +525,11 @@ function buildBoardGrid() {
     </div>`;
   ludoBoard.appendChild(yellowBase);
 
-  // 4. Blue Base (Bottom-Left 6x6)
+  // 2. Blue Base (Top-Right 6x6) with Opponent name header
   const blueBase = document.createElement("div");
   blueBase.className = "base-blue";
   blueBase.innerHTML = `
+    <div class="base-player-label" id="blue-base-label">Vandana</div>
     <div class="base-inner">
       <div class="base-slot" id="slot-blue-0"></div>
       <div class="base-slot" id="slot-blue-1"></div>
@@ -530,67 +538,97 @@ function buildBoardGrid() {
     </div>`;
   ludoBoard.appendChild(blueBase);
 
-  // 5. Center Home (3x3 in middle) with 4 triangular home slots
+  // 3. Green Base (Bottom-Left 6x6) with "YOU" bottom label
+  const greenBase = document.createElement("div");
+  greenBase.className = "base-green";
+  greenBase.innerHTML = `
+    <div class="base-inner">
+      <div class="base-slot" id="slot-green-0"></div>
+      <div class="base-slot" id="slot-green-1"></div>
+      <div class="base-slot" id="slot-green-2"></div>
+      <div class="base-slot" id="slot-green-3"></div>
+    </div>
+    <div class="base-player-label" id="green-base-label">YOU</div>`;
+  ludoBoard.appendChild(greenBase);
+
+  // 4. Red Base (Bottom-Right 6x6)
+  const redBase = document.createElement("div");
+  redBase.className = "base-red";
+  redBase.innerHTML = `
+    <div class="base-inner">
+      <div class="base-slot" id="slot-red-0"></div>
+      <div class="base-slot" id="slot-red-1"></div>
+      <div class="base-slot" id="slot-red-2"></div>
+      <div class="base-slot" id="slot-red-3"></div>
+    </div>`;
+  ludoBoard.appendChild(redBase);
+
+  // 5. Center Home (3x3 in middle) with 4 sharp colored triangles
   const centerHome = document.createElement("div");
   centerHome.className = "center-home";
   centerHome.innerHTML = `
-    <svg viewBox="0 0 100 100">
-      <polygon points="0,0 50,50 0,100" fill="#ef4444" />
-      <polygon points="0,0 50,50 100,0" fill="#10b981" />
-      <polygon points="100,0 50,50 100,100" fill="#f59e0b" />
-      <polygon points="0,100 50,50 100,100" fill="#3b82f6" />
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+      <polygon points="0,0 50,50 0,100" fill="#f5b82e" />
+      <polygon points="0,0 50,50 100,0" fill="#3b88d8" />
+      <polygon points="100,0 50,50 100,100" fill="#d9383a" />
+      <polygon points="0,100 50,50 100,100" fill="#2f9e44" />
     </svg>
     <div class="center-home-slots">
-      <div class="center-slot slot-red" id="center-home-red"></div>
-      <div class="center-slot slot-green" id="center-home-green"></div>
       <div class="center-slot slot-yellow" id="center-home-yellow"></div>
       <div class="center-slot slot-blue" id="center-home-blue"></div>
+      <div class="center-slot slot-red" id="center-home-red"></div>
+      <div class="center-slot slot-green" id="center-home-green"></div>
     </div>`;
   ludoBoard.appendChild(centerHome);
 
-  // 6. Regular track cells
+  // 6. Regular track cells (15x15)
   for (let r = 0; r < 15; r++) {
     for (let c = 0; c < 15; c++) {
-      const inRedBase = r < 6 && c < 6;
-      const inGreenBase = r < 6 && c > 8;
-      const inYellowBase = r > 8 && c > 8;
-      const inBlueBase = r > 8 && c < 6;
+      const inYellowBase = r < 6 && c < 6;
+      const inBlueBase = r < 6 && c > 8;
+      const inGreenBase = r > 8 && c < 6;
+      const inRedBase = r > 8 && c > 8;
       const inCenter = r >= 6 && r <= 8 && c >= 6 && c <= 8;
 
-      if (!inRedBase && !inGreenBase && !inYellowBase && !inBlueBase && !inCenter) {
+      if (!inYellowBase && !inBlueBase && !inGreenBase && !inRedBase && !inCenter) {
         const cell = document.createElement("div");
         cell.className = "cell";
         cell.style.gridRow = `${r + 1} / ${r + 2}`;
         cell.style.gridColumn = `${c + 1} / ${c + 2}`;
         cell.id = `cell-${r}-${c}`;
 
-        // Start tiles
-        if (r === 6 && c === 1) cell.classList.add("cell-red-start");
-        if (r === 1 && c === 8) cell.classList.add("cell-green-start");
-        if (r === 8 && c === 13) cell.classList.add("cell-yellow-start");
-        if (r === 13 && c === 6) cell.classList.add("cell-blue-start");
+        // Colored Start tiles
+        if (r === 6 && c === 1) cell.classList.add("cell-yellow-start");
+        if (r === 1 && c === 8) cell.classList.add("cell-blue-start");
+        if (r === 8 && c === 13) cell.classList.add("cell-red-start");
+        if (r === 13 && c === 6) cell.classList.add("cell-green-start");
 
-        // Home stretches
-        if (r === 7 && c >= 1 && c <= 5) cell.classList.add("cell-red-home");
-        if (c === 7 && r >= 1 && r <= 5) cell.classList.add("cell-green-home");
-        if (r === 7 && c >= 9 && c <= 13) cell.classList.add("cell-yellow-home");
-        if (c === 7 && r >= 9 && r <= 13) cell.classList.add("cell-blue-home");
+        // Colored Home stretches
+        if (r === 7 && c >= 1 && c <= 5) cell.classList.add("cell-yellow-home");
+        if (c === 7 && r >= 1 && r <= 5) cell.classList.add("cell-blue-home");
+        if (r === 7 && c >= 9 && c <= 13) cell.classList.add("cell-red-home");
+        if (c === 7 && r >= 9 && r <= 13) cell.classList.add("cell-green-home");
 
-        // Safe star spot cells
-        if (
-          (r === 2 && c === 6) ||
-          (r === 6 && c === 12) ||
-          (r === 12 && c === 8) ||
-          (r === 8 && c === 2)
-        ) {
-          cell.innerHTML = '<span class="star-icon">★</span>';
+        // Safe star spot cells matching reference screenshot
+        if (r === 2 && c === 6) {
+          cell.innerHTML = getStarSvgHtml("star-blue");
+        } else if (r === 6 && c === 12) {
+          cell.innerHTML = getStarSvgHtml("star-white");
+        } else if (r === 8 && c === 13) {
+          cell.innerHTML = getStarSvgHtml("star-red");
+        } else if (r === 13 && c === 6) {
+          cell.innerHTML = getStarSvgHtml("star-green");
+        } else if (r === 12 && c === 8) {
+          cell.innerHTML = getStarSvgHtml("star-white");
+        } else if (r === 8 && c === 2) {
+          cell.innerHTML = getStarSvgHtml("star-white");
         }
 
-        // Colored entry arrows
-        if (r === 7 && c === 0) cell.innerHTML = '<span class="entry-arrow" style="color:var(--red);">▶</span>';
-        if (r === 0 && c === 7) cell.innerHTML = '<span class="entry-arrow" style="color:var(--green);">▼</span>';
-        if (r === 7 && c === 14) cell.innerHTML = '<span class="entry-arrow" style="color:var(--yellow);">◀</span>';
-        if (r === 14 && c === 7) cell.innerHTML = '<span class="entry-arrow" style="color:var(--blue);">▲</span>';
+        // Colored entry chevron arrows
+        if (r === 7 && c === 0) cell.innerHTML = getChevronSvgHtml("right", "chevron-yellow");
+        if (r === 0 && c === 7) cell.innerHTML = getChevronSvgHtml("down", "chevron-blue");
+        if (r === 7 && c === 14) cell.innerHTML = getChevronSvgHtml("left", "chevron-red");
+        if (r === 14 && c === 7) cell.innerHTML = getChevronSvgHtml("up", "chevron-green");
 
         const tokensContainer = document.createElement("div");
         tokensContainer.className = "cell-tokens-container";
@@ -606,7 +644,7 @@ function getCellElement(r, c) {
   return document.getElementById(`cell-${r}-${c}`);
 }
 
-// Render Board Pieces with strict aspect-ratio & transform cleanup
+// Render Board Pieces with 3D Pawn Styling
 function renderBoard(gameState) {
   document.querySelectorAll(".cell-tokens-container").forEach((cont) => {
     cont.innerHTML = "";
@@ -633,8 +671,7 @@ function renderBoard(gameState) {
       tokenEl.className = `token token-${color} ${isMovable ? "selectable" : ""}`;
       tokenEl.dataset.tokenIndex = tokenIdx;
       tokenEl.dataset.color = color;
-      // Clean any inline transform state
-      tokenEl.style.transform = "";
+      tokenEl.innerHTML = getPawnSvgHtml(color);
 
       if (isMovable) {
         tokenEl.addEventListener("click", () => {
@@ -682,48 +719,42 @@ function renderBoard(gameState) {
   });
 }
 
-// Render Player Profile Card HTML
+// Render Player Profile Card HTML (No Flags, No Gift, Clean Matching Image)
 function createPlayerProfileHTML(player, isCurrentTurn, isMe) {
   const isFemale = player.name.toLowerCase().includes("vandana") || player.name.toLowerCase().includes("girl");
-  const avatarChar = isFemale ? "👩" : (isMe ? "👤" : "🧑");
-  return `
-    <div class="player-profile-card ${isCurrentTurn ? "active-turn" : ""}" data-player-id="${player.id}" data-player-color="${player.color}">
-      <div class="avatar-wrapper">
+  const avatarSrc = isFemale ? AVATAR_FEMALE : AVATAR_MALE;
+
+  if (!isMe) {
+    // Top-Right Opponent Avatar Card
+    return `
+      <div class="opponent-avatar-card ${isCurrentTurn ? "active-turn" : ""}" data-player-id="${player.id}" data-player-color="${player.color}">
         <div class="avatar-frame">
-          <span class="avatar-char">${avatarChar}</span>
-        </div>
-        <div class="avatar-gift-badge">🎁</div>
-        ${isCurrentTurn ? `<div class="avatar-turn-badge">${isMe ? "YOUR TURN" : "TURN"}</div>` : ""}
-      </div>
-      <div class="player-details">
-        <div class="player-name-row">
-          <span class="player-flag">🇮🇳</span>
-          <strong class="player-title">${player.name} ${isMe ? "(You)" : ""}</strong>
-        </div>
-        <div class="player-status-row">
-          <span class="status-dot ${player.connected ? "" : "offline"}"></span>
-          <span class="player-color-pill ${player.color}">${player.color.toUpperCase()}</span>
+          <img class="avatar-img" src="${avatarSrc}" alt="${player.name}">
         </div>
       </div>
-    </div>
-  `;
+    `;
+  } else {
+    // Bottom-Left User Avatar Card
+    return `
+      <div class="player-avatar-card ${isCurrentTurn ? "active-turn" : ""}" data-player-id="${player.id}" data-player-color="${player.color}">
+        <div class="avatar-frame">
+          <img class="avatar-img" src="${avatarSrc}" alt="${player.name}">
+        </div>
+      </div>
+    `;
+  }
 }
 
-// Render Dice Controls Attached to Local Player
+// Render 3D Dice Box Attached Next to Local Player Avatar
 function createDiceControlsHTML(diceValue, canRoll) {
-  const dotsHtml = Array.from({ length: diceValue || 1 }, () => '<div class="dice-dot"></div>').join("");
+  const val = diceValue || 4; // Default to 4 face matching screenshot
+  const dotsHtml = Array.from({ length: val }, () => '<div class="dice-dot"></div>').join("");
   return `
     <div class="dice-interactive-container">
       <div class="dice-box ${canRoll && !isDiceRolling ? "active" : ""}" id="game-dice-box" title="Tap to Roll">
-        <div class="dice-3d dice-face-${diceValue || 1}" id="game-dice-cube">
+        <div class="dice-3d dice-face-${val}" id="game-dice-cube">
           ${dotsHtml}
         </div>
-      </div>
-      <div class="dice-action-tag">
-        <button class="roll-btn-pill" id="action-roll-btn" ${canRoll && !isDiceRolling ? "" : "disabled"}>
-          ROLL
-        </button>
-        <span class="dice-hint-txt">${canRoll ? "Your turn to roll!" : (isMyTurn ? "Select a token" : "Waiting...")}</span>
       </div>
     </div>
   `;
@@ -736,10 +767,24 @@ function updateGameUI(room) {
   isMyTurn = currentPlayer && myPlayer && currentPlayer.id === myPlayer.id;
   const canRoll = isMyTurn && !room.gameState.hasRolled;
 
-  // Split players into Opponents (Top / Sides) and Me (Bottom)
+  // Update quadrant labels
+  const blueLabel = document.getElementById("blue-base-label");
+  const greenLabel = document.getElementById("green-base-label");
   const opponents = room.players.filter((p) => p.id !== myPlayer.id);
 
-  // Top Opponent Zone (Primary Opponent in 2P, e.g. Vandana)
+  if (blueLabel) {
+    if (opponents.length > 0) {
+      blueLabel.textContent = opponents[0].name;
+    } else {
+      blueLabel.textContent = "Vandana";
+    }
+  }
+
+  if (greenLabel) {
+    greenLabel.textContent = myPlayer ? "YOU" : "YOU";
+  }
+
+  // Top Opponent Zone (Top Right above blue yard)
   topPlayerZone.innerHTML = "";
   if (opponents.length >= 1) {
     const primaryOpponent = opponents[0];
@@ -766,7 +811,7 @@ function updateGameUI(room) {
     rightPlayerZone.style.display = "none";
   }
 
-  // Bottom Zone: My Profile + Interactive 3D Dice
+  // Bottom Zone: My Profile (Bottom Left) + Adjacent 3D Dice
   bottomPlayerZone.innerHTML = "";
   const isMyTurnActive = currentPlayer && myPlayer && currentPlayer.id === myPlayer.id;
   const myProfileHtml = createPlayerProfileHTML(myPlayer, isMyTurnActive, true);
@@ -775,9 +820,9 @@ function updateGameUI(room) {
 
   // Attach Dice click listeners
   const diceBox = document.getElementById("game-dice-box");
-  const actionRollBtn = document.getElementById("action-roll-btn");
-  if (diceBox && canRoll && !isDiceRolling) diceBox.addEventListener("click", onRollDice);
-  if (actionRollBtn && canRoll && !isDiceRolling) actionRollBtn.addEventListener("click", onRollDice);
+  if (diceBox && canRoll && !isDiceRolling) {
+    diceBox.addEventListener("click", onRollDice);
+  }
 
   renderBoard(room.gameState);
 }
@@ -787,10 +832,6 @@ function onRollDice() {
   initAudio();
   if (!isMyTurn || currentRoom.gameState.hasRolled || isDiceRolling) return;
   isDiceRolling = true;
-
-  // Disable button immediately
-  const actionRollBtn = document.getElementById("action-roll-btn");
-  if (actionRollBtn) actionRollBtn.disabled = true;
 
   playSound("roll");
 

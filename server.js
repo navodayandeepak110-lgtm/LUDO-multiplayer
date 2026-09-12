@@ -14,12 +14,15 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, "public")));
 
 // --- GAME LOGIC CONSTANTS ---
-const COLORS = ["red", "green", "yellow", "blue"];
+// Reference Board Layout:
+// Top-Left: Yellow | Top-Right: Blue
+// Bottom-Left: Green | Bottom-Right: Red
+const COLORS = ["green", "blue", "yellow", "red"];
 const START_OFFSETS = {
-  red: 0,
-  green: 13,
-  yellow: 26,
-  blue: 39
+  yellow: 0,
+  blue: 13,
+  red: 26,
+  green: 39
 };
 const SAFE_TILES = [0, 8, 13, 21, 26, 34, 39, 47]; // 4 start tiles + 4 star tiles
 
@@ -150,10 +153,10 @@ io.on("connection", (socket) => {
       return socket.emit("error_message", "Room is already full.");
     }
 
-    // For 2 players, use opposite colors (Red vs Yellow or Red vs Green)
+    // For 2 players, use opposite corner colors (Green vs Blue)
     let assignedColor;
     if (room.maxPlayers === 2 && room.players.length === 1) {
-      assignedColor = "yellow"; // Great 2-player contrast (opposite sides)
+      assignedColor = "blue"; // Opposite diagonal corner matching reference UI (Green YOU vs Blue Opponent)
     } else {
       const takenColors = room.players.map((p) => p.color);
       assignedColor = COLORS.find((c) => !takenColors.includes(c)) || COLORS[room.players.length];

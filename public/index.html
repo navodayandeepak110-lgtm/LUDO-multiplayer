@@ -3,14 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>D❤️V. LUDO - Real-Time Multiplayer</title>
+  <title>Ludo Multiplayer</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+  <!-- Shared SVG Gradients for 3D Pawn Tokens -->
+  <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+    <defs>
+      <!-- Green Pawn Gradients -->
+      <radialGradient id="pawnHead-green" cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#86efac" />
+        <stop offset="40%" stop-color="#22c55e" />
+        <stop offset="90%" stop-color="#15803d" />
+        <stop offset="100%" stop-color="#14532d" />
+      </radialGradient>
+      <linearGradient id="pawnBody-green" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#15803d" />
+        <stop offset="30%" stop-color="#4ade80" />
+        <stop offset="70%" stop-color="#22c55e" />
+        <stop offset="100%" stop-color="#14532d" />
+      </linearGradient>
+      <linearGradient id="pawnBase-green" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#4ade80" />
+        <stop offset="50%" stop-color="#22c55e" />
+        <stop offset="100%" stop-color="#14532d" />
+      </linearGradient>
+      <linearGradient id="pawnRing-green" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#15803d" />
+        <stop offset="50%" stop-color="#86efac" />
+        <stop offset="100%" stop-color="#14532d" />
+      </linearGradient>
+
+      <!-- Blue Pawn Gradients -->
+      <radialGradient id="pawnHead-blue" cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#93c5fd" />
+        <stop offset="40%" stop-color="#3b82f6" />
+        <stop offset="90%" stop-color="#1d4ed8" />
+        <stop offset="100%" stop-color="#1e3a8a" />
+      </radialGradient>
+      <linearGradient id="pawnBody-blue" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#1d4ed8" />
+        <stop offset="30%" stop-color="#60a5fa" />
+        <stop offset="70%" stop-color="#3b82f6" />
+        <stop offset="100%" stop-color="#1e3a8a" />
+      </linearGradient>
+      <linearGradient id="pawnBase-blue" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#60a5fa" />
+        <stop offset="50%" stop-color="#3b82f6" />
+        <stop offset="100%" stop-color="#1e3a8a" />
+      </linearGradient>
+      <linearGradient id="pawnRing-blue" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#1d4ed8" />
+        <stop offset="50%" stop-color="#93c5fd" />
+        <stop offset="100%" stop-color="#1e3a8a" />
+      </linearGradient>
+
+      <!-- Yellow Pawn Gradients -->
+      <radialGradient id="pawnHead-yellow" cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#fef08a" />
+        <stop offset="40%" stop-color="#eab308" />
+        <stop offset="90%" stop-color="#a16207" />
+        <stop offset="100%" stop-color="#713f12" />
+      </radialGradient>
+      <linearGradient id="pawnBody-yellow" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#a16207" />
+        <stop offset="30%" stop-color="#fde047" />
+        <stop offset="70%" stop-color="#eab308" />
+        <stop offset="100%" stop-color="#713f12" />
+      </linearGradient>
+      <linearGradient id="pawnBase-yellow" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#fde047" />
+        <stop offset="50%" stop-color="#eab308" />
+        <stop offset="100%" stop-color="#713f12" />
+      </linearGradient>
+      <linearGradient id="pawnRing-yellow" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#a16207" />
+        <stop offset="50%" stop-color="#fef08a" />
+        <stop offset="100%" stop-color="#713f12" />
+      </linearGradient>
+
+      <!-- Red Pawn Gradients -->
+      <radialGradient id="pawnHead-red" cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#fca5a5" />
+        <stop offset="40%" stop-color="#ef4444" />
+        <stop offset="90%" stop-color="#b91c1c" />
+        <stop offset="100%" stop-color="#7f1d1d" />
+      </radialGradient>
+      <linearGradient id="pawnBody-red" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#b91c1c" />
+        <stop offset="30%" stop-color="#f87171" />
+        <stop offset="70%" stop-color="#ef4444" />
+        <stop offset="100%" stop-color="#7f1d1d" />
+      </linearGradient>
+      <linearGradient id="pawnBase-red" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f87171" />
+        <stop offset="50%" stop-color="#ef4444" />
+        <stop offset="100%" stop-color="#7f1d1d" />
+      </linearGradient>
+      <linearGradient id="pawnRing-red" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#b91c1c" />
+        <stop offset="50%" stop-color="#fca5a5" />
+        <stop offset="100%" stop-color="#7f1d1d" />
+      </linearGradient>
+    </defs>
+  </svg>
+
   <div class="game-app">
 
     <!-- Global Floating Reaction & Effect Overlay Layer (Never clipped) -->
@@ -22,8 +123,7 @@
     <!-- Top Mini Info Bar (Header) -->
     <header class="game-header">
       <div class="header-logo">
-        <span class="dice-ico">🎲</span>
-        <span class="game-title">D❤️V. <span class="highlight">LUDO</span></span>
+        <span class="game-title">LUDO</span>
       </div>
       <div id="room-info-pill" class="room-pill hidden">
         <span class="room-label">ROOM:</span>
@@ -158,21 +258,20 @@
 
         <!-- Bottom Game Toolbar (Floating Dock) -->
         <nav class="game-toolbar" aria-label="Game controls">
-          <button id="toolbar-emoji-btn" class="toolbar-btn" title="Quick Emojis & Fast Chat">
-            <span class="btn-emoji-icon">😀</span>
-            <span class="toolbar-label">EMOJI</span>
-          </button>
-
-          <button id="toolbar-chat-btn" class="toolbar-btn" title="Game Chat">
-            <span class="btn-chat-icon">💬</span>
-            <span id="chat-badge" class="unread-badge hidden">0</span>
-            <span class="toolbar-label">CHAT</span>
-          </button>
-
-          <button id="toolbar-menu-btn" class="toolbar-btn" title="Game Menu">
-            <span class="btn-menu-icon">☰</span>
-            <span class="toolbar-label">MENU</span>
-          </button>
+          <div class="toolbar-left-group">
+            <button id="toolbar-emoji-btn" class="toolbar-icon-btn" title="Quick Emojis & Fast Chat">
+              <span class="btn-emoji-icon">😀</span>
+            </button>
+            <button id="toolbar-chat-btn" class="toolbar-icon-btn" title="Game Chat">
+              <span class="btn-chat-icon">💬</span>
+              <span id="chat-badge" class="unread-badge hidden">0</span>
+            </button>
+          </div>
+          <div class="toolbar-right-group">
+            <button id="toolbar-menu-btn" class="toolbar-icon-btn" title="Game Menu">
+              <span class="btn-menu-icon">☰</span>
+            </button>
+          </div>
         </nav>
 
       </div>
