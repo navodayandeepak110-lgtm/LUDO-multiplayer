@@ -88,7 +88,7 @@ io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
   // Create Room
-  socket.on("create_room", ({ playerName, maxPlayers }) => {
+  socket.on("create_room", ({ playerName, maxPlayers, avatar }) => {
     let roomCode = generateRoomCode();
     while (rooms.has(roomCode)) {
       roomCode = generateRoomCode();
@@ -105,6 +105,7 @@ io.on("connection", (socket) => {
           id: socket.id,
           name: playerName ? playerName.trim().substring(0, 15) : "Player 1",
           color: COLORS[0],
+          avatar: avatar || "avatar-boy-1",
           connected: true
         }
       ],
@@ -137,7 +138,7 @@ io.on("connection", (socket) => {
   });
 
   // Join Room
-  socket.on("join_room", ({ roomCode, playerName }) => {
+  socket.on("join_room", ({ roomCode, playerName, avatar }) => {
     const code = (roomCode || "").toUpperCase().trim();
     const room = rooms.get(code);
 
@@ -166,6 +167,7 @@ io.on("connection", (socket) => {
       id: socket.id,
       name: playerName ? playerName.trim().substring(0, 15) : `Player ${room.players.length + 1}`,
       color: assignedColor,
+      avatar: avatar || "avatar-girl-1",
       connected: true
     };
 
@@ -190,6 +192,17 @@ io.on("connection", (socket) => {
       room.status = "playing";
       room.gameState.logs.push(`All players connected! Game started. ${room.players[0].name}'s turn!`);
       io.to(code).emit("game_started", room);
+    }
+  });
+
+  // Update Avatar
+  socket.on("update_avatar", ({ avatar }) => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || !avatar) return;
+    const player = room.players.find((p) => p.id === socket.id);
+    if (player) {
+      player.avatar = avatar;
+      io.to(room.code).emit("room_updated", room);
     }
   });
 

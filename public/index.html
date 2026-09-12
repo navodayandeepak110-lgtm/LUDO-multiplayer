@@ -122,8 +122,12 @@
 
     <!-- Top Mini Info Bar (Header) -->
     <header class="game-header">
-      <div class="header-logo">
-        <span class="game-title">LUDO</span>
+      <div class="header-logo" title="D❤️V. LUDO">
+        <span class="logo-dice">🎲</span>
+        <span class="logo-text-d">D</span>
+        <span class="logo-heart">❤️</span>
+        <span class="logo-text-v">V.</span>
+        <span class="logo-text-ludo">LUDO</span>
       </div>
       <div id="room-info-pill" class="room-pill hidden">
         <span class="room-label">ROOM:</span>
@@ -138,6 +142,19 @@
         <div class="lobby-badge">ONLINE MULTIPLAYER</div>
         <h1 class="lobby-title">Play With Friends</h1>
         <p class="lobby-desc">Create a private game or join with a room code to play together in real-time!</p>
+
+        <!-- Avatar Selection in Lobby -->
+        <div class="avatar-selection-block">
+          <label class="avatar-block-label">Choose Your Avatar</label>
+          <div class="avatar-selector-wrap">
+            <div class="avatar-preview-box" id="lobby-avatar-preview">
+              <!-- Rendered selected avatar preview -->
+            </div>
+            <div class="avatar-picker-scroll" id="avatar-picker-list">
+              <!-- Rendered avatar choices -->
+            </div>
+          </div>
+        </div>
 
         <div class="input-block">
           <label for="player-name">Your Nickname</label>
@@ -382,6 +399,13 @@
           <button id="close-menu-btn" class="close-pill-btn">✕</button>
         </div>
         <div class="menu-items-list">
+          <button id="menu-avatar-btn" class="menu-action-item">
+            <span class="menu-icon">🎭</span>
+            <div class="menu-text">
+              <strong>Change Avatar</strong>
+              <small>Customize character</small>
+            </div>
+          </button>
           <button id="menu-rules-btn" class="menu-action-item">
             <span class="menu-icon">📜</span>
             <div class="menu-text">
@@ -410,6 +434,26 @@
               <small>Exit to main menu</small>
             </div>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP 6: AVATAR CUSTOMIZER MODAL -->
+    <div id="avatar-modal" class="modal-backdrop hidden">
+      <div class="modal-box avatar-modal-box">
+        <div class="avatar-modal-header">
+          <h3>🎭 Choose Your Avatar</h3>
+          <button id="close-avatar-btn" class="close-pill-btn">✕</button>
+        </div>
+        <div class="avatar-modal-preview">
+          <div class="modal-preview-avatar" id="modal-avatar-preview-box"></div>
+          <div class="modal-avatar-info">
+            <strong id="modal-avatar-title">Avatar</strong>
+            <small>Tap any avatar to switch</small>
+          </div>
+        </div>
+        <div class="avatar-grid-modal" id="modal-avatar-grid">
+          <!-- Populated by JS -->
         </div>
       </div>
     </div>
