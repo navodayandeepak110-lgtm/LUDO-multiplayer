@@ -1,18 +1,19 @@
-﻿const socket = io();
+const socket = io();
 
 // State
 let myPlayer = null;
 let currentRoom = null;
 let isMyTurn = false;
 let validMovableTokens = [];
+let diceResultTimer = null;
 
 // Audio Synthesizer (Web Audio API)
-const AudioContext = window.AudioContext || window.webkitAudioContext;
+const AudioContextClass = window.AudioContext || window["webkitAudioContext"];
 let audioCtx = null;
 
 function initAudio() {
-  if (!audioCtx) {
-    audioCtx = new AudioContext();
+  if (!audioCtx && AudioContextClass) {
+    audioCtx = new AudioContextClass();
   }
 }
 
@@ -133,10 +134,13 @@ const ludoBoard = document.getElementById("ludo-board");
 const diceElement = document.getElementById("dice");
 const rollDiceBtn = document.getElementById("roll-dice-btn");
 const diceHint = document.getElementById("dice-hint");
+const diceResult = document.getElementById("dice-result");
 const turnBanner = document.getElementById("turn-banner");
 const turnText = document.getElementById("turn-text");
 const gamePlayersList = document.getElementById("game-players-list");
 
+const chatToggle = document.getElementById("chat-toggle");
+const chatContent = document.getElementById("chat-content");
 const activityLog = document.getElementById("activity-log");
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
@@ -160,6 +164,13 @@ tabJoinBtn.addEventListener("click", () => {
   joinSection.classList.add("active");
   createSection.classList.remove("active");
   lobbyError.textContent = "";
+});
+
+// Chat Toggle Handler
+chatToggle.addEventListener("click", () => {
+  const isExpanded = chatContent.classList.toggle("expanded");
+  const icon = chatToggle.querySelector(".toggle-icon");
+  icon.textContent = isExpanded ? "▲" : "▼";
 });
 
 // Build 15x15 Board Grid Layout
@@ -295,9 +306,6 @@ function renderBoard(gameState) {
 
   if (!gameState || !gameState.tokens) return;
 
-  // Track map for pieces on board
-  const occupiedCells = new Map();
-
   // 3. Place tokens
   currentRoom.players.forEach((player) => {
     const color = player.color;
@@ -381,7 +389,7 @@ function updateGameUI(room) {
   isMyTurn = currentPlayer && myPlayer && currentPlayer.id === myPlayer.id;
 
   // Turn Banner
-  turnBanner.className = `turn-banner active-${currentPlayer.color}`;
+  turnBanner.className = `turn-indicator active-${currentPlayer.color}`;
   turnText.textContent = isMyTurn
     ? `✨ It's YOUR turn! (${currentPlayer.color.toUpperCase()})`
     : `⏳ ${currentPlayer.name}'s turn (${currentPlayer.color.toUpperCase()})`;
@@ -402,19 +410,21 @@ function updateGameUI(room) {
     diceHint.textContent = `Waiting for ${currentPlayer.name}...`;
   }
 
-  // Players list in sidebar
+  // Players list in compact bar
   gamePlayersList.innerHTML = "";
   room.players.forEach((p) => {
+    const isCurrent = p.id === currentPlayer.id;
+    const isMe = myPlayer && p.id === myPlayer.id;
     const card = document.createElement("div");
-    card.className = `game-player-card ${p.id === currentPlayer.id ? "current-turn" : ""}`;
+    card.className = `player-compact ${p.color} ${isCurrent ? "active-turn" : ""}`;
     card.innerHTML = `
-      <div>
-        <span class="color-dot dot-${p.color}"></span>
-        <strong>${p.name}</strong> ${p.id === myPlayer.id ? "(You)" : ""}
+      <div class="player-compact-avatar">${p.name.charAt(0).toUpperCase()}</div>
+      <div class="player-compact-info">
+        <span class="player-compact-name">${p.name} ${isMe ? "(You)" : ""}</span>
+        <span class="player-compact-status ${p.connected ? "online" : "offline"}">
+          ${p.connected ? (isCurrent ? "Rolling..." : "Ready") : "Offline"}
+        </span>
       </div>
-      <span style="font-size:0.8rem; color:${p.connected ? "#10b981" : "#ef4444"}">
-        ${p.connected ? "Online" : "Disconnected"}
-      </span>
     `;
     gamePlayersList.appendChild(card);
   });
@@ -557,7 +567,24 @@ socket.on("dice_rolled", ({ room, diceValue, validMoves, autoPass }) => {
   updateDiceFace(diceValue);
   updateGameUI(room);
 
-  appendLog(`${room.players[room.gameState.turnIndex].name} rolled a ${diceValue}.`);
+  const rollingPlayer = room.players[room.gameState.turnIndex];
+  appendLog(`${rollingPlayer.name} rolled a ${diceValue}.`);
+
+  if (diceResult) {
+    if (diceResultTimer) clearTimeout(diceResultTimer);
+    if (diceValue === 6) {
+      diceResult.className = "dice-result six";
+      diceResult.textContent = isMyTurn ? "🎉 You rolled a 6! Extra roll on move!" : `🎲 ${rollingPlayer.name} rolled a 6!`;
+      diceResult.classList.remove("hidden");
+    } else {
+      diceResult.className = "dice-result";
+      diceResult.textContent = `Rolled: ${diceValue}`;
+      diceResult.classList.remove("hidden");
+    }
+    diceResultTimer = setTimeout(() => {
+      diceResult.classList.add("hidden");
+    }, 2500);
+  }
 
   // Auto move if only 1 single valid move is available for convenience
   if (isMyTurn && validMoves.length === 1 && !autoPass) {
@@ -567,11 +594,11 @@ socket.on("dice_rolled", ({ room, diceValue, validMoves, autoPass }) => {
   }
 });
 
-socket.on("token_moved", ({ room, movedToken, capturedTokens, bonusRoll }) => {
+socket.on("token_moved", ({ room, capturedTokens, bonusRoll }) => {
   validMovableTokens = [];
   currentRoom = room;
 
-  playSound(capturedTokens.length > 0 ? "capture" : "move");
+  playSound(capturedTokens && capturedTokens.length > 0 ? "capture" : "move");
   updateGameUI(room);
 
   if (bonusRoll) {

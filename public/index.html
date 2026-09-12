@@ -101,27 +101,11 @@
     <!-- Main Game View -->
     <div id="game-screen" class="view-screen">
       <div class="game-layout">
-        
-        <!-- Left Side: Player Cards & Turn Indicator -->
-        <div class="players-sidebar">
-          <div class="turn-banner" id="turn-banner">
-            <span id="turn-text">Player's Turn</span>
-          </div>
 
-          <div id="game-players-list" class="game-players-container">
+        <!-- Compact Player Bar -->
+        <div class="players-bar">
+          <div id="game-players-list" class="game-players-compact">
             <!-- Rendered dynamically -->
-          </div>
-
-          <!-- Dice Control Box -->
-          <div class="dice-box card">
-            <h3>Your Turn</h3>
-            <div class="dice-wrapper">
-              <div id="dice" class="dice dice-1">
-                <div class="dot center"></div>
-              </div>
-            </div>
-            <button id="roll-dice-btn" class="btn btn-roll" disabled>Roll Dice</button>
-            <p id="dice-hint" class="dice-hint">Waiting for your turn...</p>
           </div>
         </div>
 
@@ -132,16 +116,36 @@
           </div>
         </div>
 
-        <!-- Right Side: Activity Log & Chat -->
-        <div class="chat-sidebar card">
-          <div class="chat-header">
-            <h3>Game Activity & Chat</h3>
+        <!-- Dice Control Box - Compact -->
+        <div class="dice-control">
+          <div class="turn-indicator" id="turn-banner">
+            <span id="turn-text">Your Turn</span>
           </div>
-          <div id="activity-log" class="activity-log"></div>
-          <form id="chat-form" class="chat-form">
-            <input type="text" id="chat-input" placeholder="Type message..." maxlength="100">
-            <button type="submit" class="btn btn-sm">Send</button>
-          </form>
+          <div class="dice-area">
+            <div id="dice" class="dice dice-1">
+              <div class="dot center"></div>
+            </div>
+            <button id="roll-dice-btn" class="btn btn-roll" disabled>
+              <span class="btn-roll-text">ROLL DICE</span>
+            </button>
+          </div>
+          <p id="dice-hint" class="dice-hint">Waiting for your turn...</p>
+          <div id="dice-result" class="dice-result hidden"></div>
+        </div>
+
+        <!-- Collapsible Activity & Chat -->
+        <div class="chat-panel">
+          <button class="chat-toggle" id="chat-toggle">
+            <span>💬 Game Activity & Chat</span>
+            <span class="toggle-icon">▼</span>
+          </button>
+          <div class="chat-content" id="chat-content">
+            <div id="activity-log" class="activity-log"></div>
+            <form id="chat-form" class="chat-form">
+              <input type="text" id="chat-input" placeholder="Type message..." maxlength="100">
+              <button type="submit" class="btn btn-sm">Send</button>
+            </form>
+          </div>
         </div>
 
       </div>
