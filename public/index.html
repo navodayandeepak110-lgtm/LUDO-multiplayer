@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>D❤️V. LUDO - Multiplayer</title>
+  <title>D❤️V. LUDO - Real-Time Multiplayer</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,11 +13,11 @@
 <body>
   <div class="game-app">
 
+    <!-- Global Floating Reaction & Effect Overlay Layer (Never clipped) -->
+    <div id="reaction-overlay-layer" class="reaction-overlay-layer"></div>
+
     <!-- In-Game Floating Feedback / Toast Alerts -->
     <div id="toast-container" class="toast-container"></div>
-
-    <!-- Celebration Fireworks / Hearts Layer -->
-    <div id="fx-layer" class="fx-layer"></div>
 
     <!-- Top Mini Info Bar (Header) -->
     <header class="game-header">
@@ -137,10 +137,8 @@
     <main id="game-screen" class="view-screen">
       <div class="game-canvas">
 
-        <!-- Top Player Zone (Opponents, e.g. Vandana) -->
-        <div class="top-player-zone" id="top-player-zone">
-          <!-- Dynamically populated opponent avatar profile -->
-        </div>
+        <!-- Top Player Zone (Opponents, e.g. Vandana on top right) -->
+        <div class="top-player-zone" id="top-player-zone"></div>
 
         <!-- Middle Zone: Centered Ludo Board with optional Side Avatars (for 3P/4P) -->
         <div class="board-area">
@@ -156,9 +154,7 @@
         </div>
 
         <!-- Bottom Player Zone (Current User "YOU" + Integrated 3D Dice) -->
-        <div class="bottom-player-zone" id="bottom-player-zone">
-          <!-- Populated with Local Player Profile + 3D Interactive Dice -->
-        </div>
+        <div class="bottom-player-zone" id="bottom-player-zone"></div>
 
         <!-- Bottom Game Toolbar (Floating Dock) -->
         <nav class="game-toolbar" aria-label="Game controls">

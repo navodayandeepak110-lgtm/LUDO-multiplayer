@@ -62,15 +62,32 @@ body {
     radial-gradient(circle at 50% 30%, #152754 0%, #09122a 100%);
   background-size: 20px 20px, 100% 100%;
   background-position: 0 0, 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .game-app {
   width: 100%;
   height: 100dvh;
   max-height: 100dvh;
+  max-width: 520px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
+}
+
+/* ===================================================
+   GLOBAL REACTION OVERLAY LAYER (Never clipped)
+   =================================================== */
+.reaction-overlay-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 150;
   overflow: hidden;
 }
 
@@ -78,13 +95,13 @@ body {
    HEADER
    =================================================== */
 .game-header {
-  height: 48px;
-  min-height: 48px;
+  height: 46px;
+  min-height: 46px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 16px;
-  background: rgba(11, 20, 45, 0.7);
+  background: rgba(11, 20, 45, 0.75);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 30;
@@ -117,7 +134,7 @@ body {
   gap: 6px;
   background: rgba(255, 183, 3, 0.15);
   border: 1px solid rgba(255, 183, 3, 0.4);
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 20px;
 }
 
@@ -154,7 +171,7 @@ body {
 .view-screen {
   display: none;
   width: 100%;
-  height: calc(100dvh - 48px);
+  height: calc(100dvh - 46px);
   overflow-y: auto;
   position: relative;
 }
@@ -176,7 +193,7 @@ body {
 .lobby-card {
   width: 100%;
   max-width: 400px;
-  background: rgba(19, 34, 71, 0.9);
+  background: rgba(19, 34, 71, 0.92);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 24px;
@@ -499,14 +516,12 @@ body {
    =================================================== */
 #game-screen {
   overflow: hidden;
-  height: calc(100dvh - 48px);
+  height: calc(100dvh - 46px);
 }
 
 .game-canvas {
   width: 100%;
   height: 100%;
-  max-width: 460px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -523,10 +538,10 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(14, 25, 53, 0.85);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(14, 25, 53, 0.88);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
-  padding: 5px 10px 5px 6px;
+  padding: 4px 10px 4px 6px;
   backdrop-filter: blur(10px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   transition: all 0.3s;
@@ -534,7 +549,7 @@ body {
 
 .player-profile-card.active-turn {
   border-color: var(--accent-gold);
-  box-shadow: 0 0 16px rgba(255, 183, 3, 0.5);
+  box-shadow: 0 0 16px rgba(255, 183, 3, 0.55);
   animation: cardTurnPulse 2s infinite ease-in-out;
 }
 
@@ -662,28 +677,13 @@ body {
 .player-color-pill.yellow { background: var(--yellow-dark); color: #081024; }
 .player-color-pill.blue { background: var(--blue-dark); }
 
-/* Anchor for floating speech bubbles / emojis */
-.avatar-reaction-anchor {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 50;
-  width: 0;
-  height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* TOP PLAYER ZONE */
 .top-player-zone {
   width: 100%;
   display: flex;
   justify-content: flex-end;
   padding: 2px 4px;
-  min-height: 54px;
+  min-height: 52px;
 }
 
 /* BOTTOM PLAYER ZONE (YOU + DICE) */
@@ -694,7 +694,7 @@ body {
   align-items: center;
   gap: 12px;
   padding: 2px 4px;
-  min-height: 62px;
+  min-height: 60px;
 }
 
 /* ===================================================
@@ -728,7 +728,7 @@ body {
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   padding: 5px;
   position: relative;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .dice-box.active .dice-3d {
@@ -750,7 +750,7 @@ body {
 }
 
 .dice-3d.rolling {
-  animation: diceRollAnim 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  animation: diceRollAnim 0.55s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 @keyframes diceRollAnim {
@@ -849,9 +849,9 @@ body {
 }
 
 .ludo-board {
-  width: min(88vw, 420px, calc(100dvh - 250px));
-  height: min(88vw, 420px, calc(100dvh - 250px));
-  aspect-ratio: 1;
+  width: min(88vw, 420px, calc(100dvh - 240px));
+  height: min(88vw, 420px, calc(100dvh - 240px));
+  aspect-ratio: 1 / 1;
   background: var(--board-bg);
   border: 3.5px solid #0f1c3f;
   border-radius: 14px;
@@ -869,6 +869,8 @@ body {
   justify-content: center;
   align-items: center;
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 /* Bases */
@@ -897,6 +899,7 @@ body {
   justify-content: center;
   align-items: center;
   border: 1.5px dashed #cbd5e1;
+  position: relative;
 }
 
 /* Center Home Triangle with 4 quadrant token slots */
@@ -963,18 +966,35 @@ body {
 }
 
 /* ===================================================
-   3D TOKENS
+   3D TOKENS - BULLETPROOF NO-SQUASH ARCHITECTURE
    =================================================== */
 .token {
-  width: 74%;
-  height: 74%;
-  border-radius: 50%;
-  border: 2px solid #ffffff;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(0, 0, 0, 0.4);
+  width: 76% !important;
+  max-width: 26px !important;
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  border-radius: 50% !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(0, 0, 0, 0.45) !important;
   cursor: default;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 5;
   position: relative;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  display: block;
+}
+
+.token::after {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 20%;
+  width: 35%;
+  height: 35%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
 }
 
 .token-red { background: radial-gradient(circle at 35% 35%, var(--red-light), var(--red-dark)); }
@@ -1011,18 +1031,16 @@ body {
 }
 
 .cell-tokens-container.multi .token {
-  width: 44%;
-  height: 44%;
+  width: 44% !important;
+  max-width: 14px !important;
+  aspect-ratio: 1 / 1 !important;
 }
 
 /* ===================================================
-   FLOATING REACTIONS & SPEECH BUBBLES
+   FLOATING OVERLAY REACTIONS & SPEECH BUBBLES
    =================================================== */
-.fast-chat-bubble {
+.overlay-reaction-bubble {
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%) translateY(-10px);
   background: #ffffff;
   color: #0f172a;
   padding: 6px 12px;
@@ -1030,11 +1048,14 @@ body {
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  animation: bubblePop 3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -100%);
+  animation: overlayBubblePop 3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 160;
+  pointer-events: none;
 }
 
-.fast-chat-bubble::after {
+.overlay-reaction-bubble::after {
   content: '';
   position: absolute;
   bottom: -6px;
@@ -1047,45 +1068,43 @@ body {
   width: 0;
 }
 
-@keyframes bubblePop {
-  0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.6); }
-  15% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-  80% { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-24px) scale(0.8); }
+@keyframes overlayBubblePop {
+  0% { opacity: 0; transform: translate(-50%, -70%) scale(0.6); }
+  15% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -105%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -130%) scale(0.8); }
 }
 
-.floating-emoji {
+.overlay-floating-emoji {
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  font-size: 38px;
+  font-size: 40px;
   line-height: 1;
-  animation: floatEmoji 2.2s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: translate(-50%, -100%);
+  animation: overlayFloatEmoji 2.2s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
   pointer-events: none;
+  z-index: 160;
 }
 
-@keyframes floatEmoji {
-  0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.4); }
-  20% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.2); }
-  40% { transform: translateX(-50%) translateY(-15px) scale(1); }
-  80% { opacity: 1; transform: translateX(-50%) translateY(-45px) scale(1); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-75px) scale(0.7); }
+@keyframes overlayFloatEmoji {
+  0% { opacity: 0; transform: translate(-50%, -60%) scale(0.4); }
+  20% { opacity: 1; transform: translate(-50%, -100%) scale(1.2); }
+  40% { transform: translate(-50%, -120%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -160%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -200%) scale(0.7); }
 }
 
-/* Couple Heart Particles */
-.heart-burst-particle {
+.overlay-heart-particle {
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
-  animation: heartBurst 2.5s forwards ease-out;
+  animation: overlayHeartDrift 2.5s forwards ease-out;
   pointer-events: none;
+  z-index: 160;
 }
 
-@keyframes heartBurst {
-  0% { opacity: 1; transform: translate(0, 0) scale(0.5); }
-  100% { opacity: 0; transform: translate(var(--tx, 0px), var(--ty, -100px)) scale(1.3); }
+@keyframes overlayHeartDrift {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--tx, 0px)), calc(-50% + var(--ty, -100px))) scale(1.3); }
 }
 
 /* ===================================================
@@ -1304,7 +1323,7 @@ body {
 
 /* ===================================================
    POPUP 2: FULL CHAT MODAL
-   =================================================== */
+   ================================================== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1626,14 +1645,14 @@ body {
    =================================================== */
 .toast-container {
   position: fixed;
-  top: 56px;
+  top: 52px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   gap: 6px;
   align-items: center;
-  z-index: 90;
+  z-index: 120;
   pointer-events: none;
 }
 

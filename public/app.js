@@ -12,8 +12,9 @@ let validMovableTokens = [];
 let soundEnabled = true;
 let unreadChatCount = 0;
 let isChatModalOpen = false;
+let isDiceRolling = false;
 
-// Audio Synthesizer (Web Audio API)
+// Audio Synthesizer (Realistic Dice Tumble + Game FX)
 const AudioContextClass = window.AudioContext || window["webkitAudioContext"];
 let audioCtx = null;
 
@@ -21,49 +22,99 @@ function initAudio() {
   if (!audioCtx && AudioContextClass) {
     audioCtx = new AudioContextClass();
   }
+  if (audioCtx && audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
 }
 
+// Crisp Web Audio Synthesis
 function playSound(type) {
-  if (!soundEnabled || !audioCtx) return;
+  if (!soundEnabled) return;
+  initAudio();
+  if (!audioCtx) return;
+
   try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
     const now = audioCtx.currentTime;
 
     if (type === "roll") {
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(160, now + 0.18);
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
-      osc.start(now);
-      osc.stop(now + 0.18);
+      // Multi-tap realistic dice tumbling physics
+      const clatterDelays = [0, 0.08, 0.18, 0.28, 0.42];
+      clatterDelays.forEach((delay, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const tapTime = now + delay;
+        const isFinal = idx === clatterDelays.length - 1;
+
+        osc.type = isFinal ? "triangle" : "sine";
+        const freq = isFinal ? 180 : 300 + Math.random() * 250;
+        osc.frequency.setValueAtTime(freq, tapTime);
+        osc.frequency.exponentialRampToValueAtTime(80, tapTime + 0.06);
+
+        const vol = isFinal ? 0.35 : 0.18 + Math.random() * 0.1;
+        gain.gain.setValueAtTime(vol, tapTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, tapTime + 0.06);
+
+        osc.start(tapTime);
+        osc.stop(tapTime + 0.06);
+      });
     } else if (type === "move") {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
       osc.type = "sine";
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.exponentialRampToValueAtTime(587.33, now + 0.1);
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.exponentialRampToValueAtTime(620, now + 0.09);
       gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
       osc.start(now);
-      osc.stop(now + 0.1);
+      osc.stop(now + 0.09);
     } else if (type === "capture") {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
       osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
-      gain.gain.setValueAtTime(0.4, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.frequency.setValueAtTime(700, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 0.3);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
       osc.start(now);
       osc.stop(now + 0.3);
-    } else if (type === "pop") {
+    } else if (type === "reaction") {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
       osc.type = "sine";
-      osc.frequency.setValueAtTime(520, now);
-      osc.frequency.exponentialRampToValueAtTime(780, now + 0.08);
+      osc.frequency.setValueAtTime(540, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
       gain.gain.setValueAtTime(0.25, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc.start(now);
-      osc.stop(now + 0.08);
+      osc.stop(now + 0.12);
+    } else if (type === "romantic") {
+      const notes = [440, 554.37, 659.25, 880];
+      notes.forEach((freq, idx) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(audioCtx.destination);
+
+        o.type = "sine";
+        const t = now + idx * 0.08;
+        o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.25, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        o.start(t);
+        o.stop(t + 0.25);
+      });
     } else if (type === "win") {
       const notes = [523.25, 659.25, 783.99, 1046.5];
       notes.forEach((freq, idx) => {
@@ -71,12 +122,13 @@ function playSound(type) {
         const g = audioCtx.createGain();
         o.connect(g);
         g.connect(audioCtx.destination);
-        o.type = "sine";
-        o.frequency.setValueAtTime(freq, now + idx * 0.15);
-        g.gain.setValueAtTime(0.3, now + idx * 0.15);
-        g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.15 + 0.3);
-        o.start(now + idx * 0.15);
-        o.stop(now + idx * 0.15 + 0.3);
+        o.type = "triangle";
+        const t = now + idx * 0.14;
+        o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.3, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        o.start(t);
+        o.stop(t + 0.3);
       });
     }
   } catch (e) {
@@ -142,7 +194,7 @@ const leftPlayerZone = document.getElementById("left-player-zone");
 const rightPlayerZone = document.getElementById("right-player-zone");
 const ludoBoard = document.getElementById("ludo-board");
 const toastContainer = document.getElementById("toast-container");
-const fxLayer = document.getElementById("fx-layer");
+const reactionOverlayLayer = document.getElementById("reaction-overlay-layer");
 
 // Toolbar & Popups
 const toolbarEmojiBtn = document.getElementById("toolbar-emoji-btn");
@@ -326,7 +378,7 @@ document.querySelectorAll(".fast-chat-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     initAudio();
     const msg = btn.getAttribute("data-msg");
-    socket.emit("send_reaction", { type: "fast_chat", content: msg });
+    socket.emit("send_reaction", { type: "fast_chat", content: msg, isRomantic: false });
     quickReactionPanel.classList.add("hidden");
   });
 });
@@ -337,65 +389,90 @@ document.querySelectorAll(".quick-emoji-btn").forEach((btn) => {
     initAudio();
     const emoji = btn.getAttribute("data-emoji");
     const isRomantic = btn.classList.contains("romantic");
-    socket.emit("send_reaction", { type: "emoji", content: emoji, isRomantic });
+    socket.emit("send_reaction", { type: "emoji", content: emoji, isRomantic: isRomantic });
     quickReactionPanel.classList.add("hidden");
   });
 });
 
-// Floating Reaction & Speech Bubble Renderer
+// ROBUST MULTIPLAYER FLOATING REACTION RENDERER
 function displayPlayerReaction(data) {
   const { senderId, sender, color, type, content, isRomantic } = data;
-  playSound(isRomantic ? "win" : "pop");
+  playSound(isRomantic ? "romantic" : "reaction");
 
-  // Find player's avatar anchor in the DOM
-  const playerCard = document.querySelector(`[data-player-id="${senderId}"]`);
-  const anchor = playerCard ? playerCard.querySelector(".avatar-reaction-anchor") : null;
+  // Determine screen coordinates of the sender's avatar
+  let targetX = window.innerWidth / 2;
+  let targetY = window.innerHeight * 0.35;
+
+  const playerCard = document.querySelector(`[data-player-id="${senderId}"]`) || 
+                     document.querySelector(`[data-player-color="${color}"]`);
+
+  if (playerCard) {
+    const rect = playerCard.getBoundingClientRect();
+    targetX = rect.left + rect.width / 2;
+    targetY = rect.top;
+  } else {
+    // Default 1v1 positioning fallback
+    const isMe = myPlayer && (senderId === myPlayer.id || color === myPlayer.color);
+    if (isMe) {
+      targetX = window.innerWidth * 0.25;
+      targetY = window.innerHeight * 0.82;
+    } else {
+      targetX = window.innerWidth * 0.75;
+      targetY = window.innerHeight * 0.12;
+    }
+  }
 
   if (type === "fast_chat") {
-    if (anchor) {
-      const bubble = document.createElement("div");
-      bubble.className = "fast-chat-bubble";
-      bubble.textContent = content;
-      anchor.appendChild(bubble);
-      setTimeout(() => {
-        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
-      }, 3000);
-    }
-    // Also append to chat history
+    const bubble = document.createElement("div");
+    bubble.className = "overlay-reaction-bubble";
+    bubble.textContent = content;
+    bubble.style.left = `${targetX}px`;
+    bubble.style.top = `${targetY}px`;
+    reactionOverlayLayer.appendChild(bubble);
+
+    setTimeout(() => {
+      if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+    }, 3000);
+
+    // Sync to Chat history
     appendChatMessage({
       sender,
       color,
       text: content,
       time: data.time || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      isMine: myPlayer && senderId === myPlayer.id
+      isMine: myPlayer && (senderId === myPlayer.id || color === myPlayer.color)
     });
   } else if (type === "emoji") {
-    if (anchor) {
-      const el = document.createElement("div");
-      el.className = "floating-emoji";
-      el.textContent = content;
-      anchor.appendChild(el);
-      setTimeout(() => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }, 2200);
+    const emojiEl = document.createElement("div");
+    emojiEl.className = "overlay-floating-emoji";
+    emojiEl.textContent = content;
+    emojiEl.style.left = `${targetX}px`;
+    emojiEl.style.top = `${targetY}px`;
+    reactionOverlayLayer.appendChild(emojiEl);
 
-      if (isRomantic) {
-        // Create constellation of mini hearts
-        for (let i = 0; i < 6; i++) {
+    setTimeout(() => {
+      if (emojiEl.parentNode) emojiEl.parentNode.removeChild(emojiEl);
+    }, 2200);
+
+    // Romantic Heart Particle Constellation
+    if (isRomantic) {
+      for (let i = 0; i < 7; i++) {
+        setTimeout(() => {
+          const h = document.createElement("div");
+          h.className = "overlay-heart-particle";
+          h.textContent = ["❤️", "💖", "✨", "💕", "💋", "🫶", "🌹"][Math.floor(Math.random() * 7)];
+          const tx = (Math.random() - 0.5) * 120;
+          const ty = -(80 + Math.random() * 90);
+          h.style.setProperty("--tx", `${tx}px`);
+          h.style.setProperty("--ty", `${ty}px`);
+          h.style.left = `${targetX}px`;
+          h.style.top = `${targetY}px`;
+          reactionOverlayLayer.appendChild(h);
+
           setTimeout(() => {
-            const h = document.createElement("div");
-            h.className = "heart-burst-particle";
-            h.textContent = ["❤️", "💖", "✨", "💕", "💋"][Math.floor(Math.random() * 5)];
-            const tx = (Math.random() - 0.5) * 100;
-            const ty = -(60 + Math.random() * 70);
-            h.style.setProperty("--tx", `${tx}px`);
-            h.style.setProperty("--ty", `${ty}px`);
-            anchor.appendChild(h);
-            setTimeout(() => {
-              if (h.parentNode) h.parentNode.removeChild(h);
-            }, 2500);
-          }, i * 150);
-        }
+            if (h.parentNode) h.parentNode.removeChild(h);
+          }, 2500);
+        }, i * 130);
       }
     }
   }
@@ -529,7 +606,7 @@ function getCellElement(r, c) {
   return document.getElementById(`cell-${r}-${c}`);
 }
 
-// Render Board Pieces
+// Render Board Pieces with strict aspect-ratio & transform cleanup
 function renderBoard(gameState) {
   document.querySelectorAll(".cell-tokens-container").forEach((cont) => {
     cont.innerHTML = "";
@@ -556,6 +633,8 @@ function renderBoard(gameState) {
       tokenEl.className = `token token-${color} ${isMovable ? "selectable" : ""}`;
       tokenEl.dataset.tokenIndex = tokenIdx;
       tokenEl.dataset.color = color;
+      // Clean any inline transform state
+      tokenEl.style.transform = "";
 
       if (isMovable) {
         tokenEl.addEventListener("click", () => {
@@ -593,7 +672,6 @@ function renderBoard(gameState) {
           }
         }
       } else if (step === 56) {
-        tokenEl.style.transform = "scale(0.85)";
         tokenEl.title = "Home!";
         const centerHomeSlot = document.getElementById(`center-home-${color}`);
         if (centerHomeSlot) {
@@ -609,8 +687,7 @@ function createPlayerProfileHTML(player, isCurrentTurn, isMe) {
   const isFemale = player.name.toLowerCase().includes("vandana") || player.name.toLowerCase().includes("girl");
   const avatarChar = isFemale ? "👩" : (isMe ? "👤" : "🧑");
   return `
-    <div class="player-profile-card ${isCurrentTurn ? "active-turn" : ""}" data-player-id="${player.id}">
-      <div class="avatar-reaction-anchor"></div>
+    <div class="player-profile-card ${isCurrentTurn ? "active-turn" : ""}" data-player-id="${player.id}" data-player-color="${player.color}">
       <div class="avatar-wrapper">
         <div class="avatar-frame">
           <span class="avatar-char">${avatarChar}</span>
@@ -637,13 +714,13 @@ function createDiceControlsHTML(diceValue, canRoll) {
   const dotsHtml = Array.from({ length: diceValue || 1 }, () => '<div class="dice-dot"></div>').join("");
   return `
     <div class="dice-interactive-container">
-      <div class="dice-box ${canRoll ? "active" : ""}" id="game-dice-box" title="Tap to Roll">
+      <div class="dice-box ${canRoll && !isDiceRolling ? "active" : ""}" id="game-dice-box" title="Tap to Roll">
         <div class="dice-3d dice-face-${diceValue || 1}" id="game-dice-cube">
           ${dotsHtml}
         </div>
       </div>
       <div class="dice-action-tag">
-        <button class="roll-btn-pill" id="action-roll-btn" ${canRoll ? "" : "disabled"}>
+        <button class="roll-btn-pill" id="action-roll-btn" ${canRoll && !isDiceRolling ? "" : "disabled"}>
           ROLL
         </button>
         <span class="dice-hint-txt">${canRoll ? "Your turn to roll!" : (isMyTurn ? "Select a token" : "Waiting...")}</span>
@@ -699,8 +776,8 @@ function updateGameUI(room) {
   // Attach Dice click listeners
   const diceBox = document.getElementById("game-dice-box");
   const actionRollBtn = document.getElementById("action-roll-btn");
-  if (diceBox && canRoll) diceBox.addEventListener("click", onRollDice);
-  if (actionRollBtn && canRoll) actionRollBtn.addEventListener("click", onRollDice);
+  if (diceBox && canRoll && !isDiceRolling) diceBox.addEventListener("click", onRollDice);
+  if (actionRollBtn && canRoll && !isDiceRolling) actionRollBtn.addEventListener("click", onRollDice);
 
   renderBoard(room.gameState);
 }
@@ -708,13 +785,18 @@ function updateGameUI(room) {
 // Action Handlers
 function onRollDice() {
   initAudio();
-  if (!isMyTurn || currentRoom.gameState.hasRolled) return;
+  if (!isMyTurn || currentRoom.gameState.hasRolled || isDiceRolling) return;
+  isDiceRolling = true;
+
+  // Disable button immediately
+  const actionRollBtn = document.getElementById("action-roll-btn");
+  if (actionRollBtn) actionRollBtn.disabled = true;
+
   playSound("roll");
 
   const diceCube = document.getElementById("game-dice-cube");
   if (diceCube) {
     diceCube.classList.add("rolling");
-    setTimeout(() => diceCube.classList.remove("rolling"), 500);
   }
 
   socket.emit("roll_dice");
@@ -840,28 +922,57 @@ socket.on("game_started", (room) => {
   showToast(`🎲 Game Started! ${room.players[0].name}'s turn`);
 });
 
+// Realistic Multi-Frame Dice Deceleration Sequence
 socket.on("dice_rolled", ({ room, diceValue, validMoves, autoPass }) => {
   currentRoom = room;
   validMovableTokens = validMoves || [];
-  playSound("roll");
-  updateGameUI(room);
+  const diceCube = document.getElementById("game-dice-cube");
 
-  const rollingPlayer = room.players[room.gameState.turnIndex];
-  if (diceValue === 6) {
-    showToast(`🎉 ${rollingPlayer.name} rolled a 6! Extra roll!`);
+  // Multi-frame face tumbling animation before settling
+  let frameCount = 0;
+  const maxFrames = 7;
+  const frameIntervals = [45, 55, 65, 80, 100, 130, 160];
+
+  function runDiceCycle() {
+    if (frameCount < maxFrames) {
+      const randVal = Math.floor(Math.random() * 6) + 1;
+      if (diceCube) {
+        diceCube.className = `dice-3d rolling dice-face-${randVal}`;
+        diceCube.innerHTML = Array.from({ length: randVal }, () => '<div class="dice-dot"></div>').join("");
+      }
+      const delay = frameIntervals[frameCount] || 80;
+      frameCount++;
+      setTimeout(runDiceCycle, delay);
+    } else {
+      // Settle on the server's actual dice value
+      isDiceRolling = false;
+      if (diceCube) {
+        diceCube.className = `dice-3d dice-face-${diceValue}`;
+        diceCube.innerHTML = Array.from({ length: diceValue }, () => '<div class="dice-dot"></div>').join("");
+      }
+      updateGameUI(room);
+
+      const rollingPlayer = room.players[room.gameState.turnIndex];
+      if (diceValue === 6) {
+        showToast(`🎉 ${rollingPlayer.name} rolled a 6! Extra roll!`);
+      }
+
+      // Convenient auto-move if only 1 single valid token move
+      if (isMyTurn && validMoves.length === 1 && !autoPass) {
+        setTimeout(() => {
+          onTokenClick(validMoves[0]);
+        }, 450);
+      }
+    }
   }
 
-  // Convenient auto-move if only 1 single valid token move
-  if (isMyTurn && validMoves.length === 1 && !autoPass) {
-    setTimeout(() => {
-      onTokenClick(validMoves[0]);
-    }, 450);
-  }
+  runDiceCycle();
 });
 
 socket.on("token_moved", ({ room, capturedTokens, bonusRoll }) => {
   validMovableTokens = [];
   currentRoom = room;
+  isDiceRolling = false;
 
   if (capturedTokens && capturedTokens.length > 0) {
     playSound("capture");
@@ -880,6 +991,7 @@ socket.on("token_moved", ({ room, capturedTokens, bonusRoll }) => {
 socket.on("turn_passed", ({ room, reason }) => {
   validMovableTokens = [];
   currentRoom = room;
+  isDiceRolling = false;
   updateGameUI(room);
   if (reason) showToast(`Turn passed: ${reason}`);
 });
