@@ -799,12 +799,10 @@ function createPlayerProfileHTML(player, isCurrentTurn, isMe) {
   const avatarId = player.avatar || (player.name && player.name.toLowerCase().includes("vandana") ? "girl-1" : "boy-1");
   const avatarSrc = getAvatarSrc(avatarId);
   const isOpponent = !isMe;
-  const flag = "🇮🇳";
 
   return `
     <div class="game-player-card ${isOpponent ? "opponent-card" : "local-card"} ${isCurrentTurn ? "active-turn" : ""}" data-player-id="${player.id}" data-player-color="${player.color}">
       <div class="card-avatar-box">
-        <div class="card-gift-badge" title="Level / Gift">🎁</div>
         <div class="avatar-frame">
           <img class="avatar-img" src="${avatarSrc}" alt="${player.name}">
         </div>
@@ -812,7 +810,6 @@ function createPlayerProfileHTML(player, isCurrentTurn, isMe) {
       </div>
       <div class="card-player-meta">
         <div class="card-name-row">
-          <span class="card-flag">${flag}</span>
           <span class="card-name-txt">${player.name}${isMe ? " (You)" : ""}</span>
         </div>
         <div class="card-color-pill pill-${player.color}">
