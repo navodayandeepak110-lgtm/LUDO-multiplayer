@@ -853,6 +853,7 @@ function updateGameUI(room) {
   const currentPlayer = room.players[room.gameState.turnIndex];
   isMyTurn = currentPlayer && myPlayer && currentPlayer.id === myPlayer.id;
   const canRoll = isMyTurn && !room.gameState.hasRolled;
+  const opponents = room.players.filter((p) => p.id !== (myPlayer ? myPlayer.id : ""));
 
   // Update quadrant labels dynamically based on which player owns each color
   const colors = ["green", "blue", "yellow", "red"];
