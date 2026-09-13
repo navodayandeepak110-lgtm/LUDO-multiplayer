@@ -591,6 +591,7 @@ function buildBoardGrid() {
   const yellowBase = document.createElement("div");
   yellowBase.className = "base-yellow";
   yellowBase.innerHTML = `
+    <div class="base-player-label" id="yellow-base-label"></div>
     <div class="base-inner">
       <div class="base-slot" id="slot-yellow-0"></div>
       <div class="base-slot" id="slot-yellow-1"></div>
@@ -599,11 +600,11 @@ function buildBoardGrid() {
     </div>`;
   ludoBoard.appendChild(yellowBase);
 
-  // 2. Blue Base (Top-Right 6x6) with Opponent name header
+  // 2. Blue Base (Top-Right 6x6)
   const blueBase = document.createElement("div");
   blueBase.className = "base-blue";
   blueBase.innerHTML = `
-    <div class="base-player-label" id="blue-base-label">Vandana</div>
+    <div class="base-player-label" id="blue-base-label"></div>
     <div class="base-inner">
       <div class="base-slot" id="slot-blue-0"></div>
       <div class="base-slot" id="slot-blue-1"></div>
@@ -612,7 +613,7 @@ function buildBoardGrid() {
     </div>`;
   ludoBoard.appendChild(blueBase);
 
-  // 3. Green Base (Bottom-Left 6x6) with "YOU" bottom label
+  // 3. Green Base (Bottom-Left 6x6)
   const greenBase = document.createElement("div");
   greenBase.className = "base-green";
   greenBase.innerHTML = `
@@ -622,7 +623,7 @@ function buildBoardGrid() {
       <div class="base-slot" id="slot-green-2"></div>
       <div class="base-slot" id="slot-green-3"></div>
     </div>
-    <div class="base-player-label" id="green-base-label">YOU</div>`;
+    <div class="base-player-label" id="green-base-label"></div>`;
   ludoBoard.appendChild(greenBase);
 
   // 4. Red Base (Bottom-Right 6x6)
@@ -634,7 +635,8 @@ function buildBoardGrid() {
       <div class="base-slot" id="slot-red-1"></div>
       <div class="base-slot" id="slot-red-2"></div>
       <div class="base-slot" id="slot-red-3"></div>
-    </div>`;
+    </div>
+    <div class="base-player-label" id="red-base-label"></div>`;
   ludoBoard.appendChild(redBase);
 
   // 5. Center Home (3x3 in middle) with 4 sharp colored triangles
@@ -852,22 +854,19 @@ function updateGameUI(room) {
   isMyTurn = currentPlayer && myPlayer && currentPlayer.id === myPlayer.id;
   const canRoll = isMyTurn && !room.gameState.hasRolled;
 
-  // Update quadrant labels
-  const blueLabel = document.getElementById("blue-base-label");
-  const greenLabel = document.getElementById("green-base-label");
-  const opponents = room.players.filter((p) => p.id !== myPlayer.id);
-
-  if (blueLabel) {
-    if (opponents.length > 0) {
-      blueLabel.textContent = opponents[0].name;
-    } else {
-      blueLabel.textContent = "Vandana";
+  // Update quadrant labels dynamically based on which player owns each color
+  const colors = ["green", "blue", "yellow", "red"];
+  colors.forEach((color) => {
+    const labelEl = document.getElementById(`${color}-base-label`);
+    if (labelEl) {
+      const player = room.players.find((p) => p.color === color);
+      if (player) {
+        labelEl.textContent = (myPlayer && player.id === myPlayer.id) ? "YOU" : player.name;
+      } else {
+        labelEl.textContent = "";
+      }
     }
-  }
-
-  if (greenLabel) {
-    greenLabel.textContent = myPlayer ? "YOU" : "YOU";
-  }
+  });
 
   // Top Opponent Zone (Top Right above blue yard)
   topPlayerZone.innerHTML = "";

@@ -1171,11 +1171,13 @@ body {
   pointer-events: none;
 }
 
+#yellow-base-label,
 #blue-base-label {
   margin-bottom: 4px;
 }
 
-#green-base-label {
+#green-base-label,
+#red-base-label {
   margin-top: 4px;
 }
 
